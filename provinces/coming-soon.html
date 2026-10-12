@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>در حال ساخت | نقشه هوشمند ایران</title>
+    <style>
+        @font-face {
+            font-family: 'Vazirmatn';
+            src: local('Vazirmatn'), url('../fonts/Vazirmatn.woff2') format('woff2');
+            font-weight: 100 900;
+            font-display: swap;
+        }
+        :root {
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --line: rgba(255, 255, 255, 0.1);
+            --blue: #3b82f6;
+            --blue-soft: #60a5fa;
+            --muted: #94a3b8;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: radial-gradient(circle at 50% 0%, #1e293b 0%, var(--bg) 70%);
+            color: #fff;
+            font-family: 'Vazirmatn', Tahoma, system-ui, sans-serif;
+            line-height: 1.9;
+        }
+        .card {
+            width: 100%;
+            max-width: 560px;
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            padding: 36px 30px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 50px;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(96, 165, 250, 0.4);
+            color: var(--blue-soft);
+            font-size: 0.85rem;
+        }
+        h1 { margin: 16px 0 6px; font-size: 2rem; color: var(--blue-soft); }
+        p { margin: 0 0 22px; color: var(--muted); }
+        .progress { margin: 26px 0 8px; text-align: right; font-size: 0.9rem; color: var(--muted); display: flex; justify-content: space-between; }
+        .bar { height: 10px; background: #0f172a; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
+        .bar span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--blue), var(--blue-soft)); border-radius: 10px; transition: width 0.8s ease; }
+        .ready-title { margin: 26px 0 10px; font-size: 0.95rem; color: var(--muted); }
+        .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+        .chips a {
+            padding: 6px 14px;
+            border-radius: 50px;
+            background: #0f172a;
+            border: 1px solid var(--line);
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+        .chips a:hover { background: var(--blue); border-color: var(--blue); }
+        .back {
+            display: inline-block;
+            margin-top: 28px;
+            padding: 11px 28px;
+            border-radius: 50px;
+            background: var(--blue);
+            color: #fff;
+            text-decoration: none;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .back:hover { background: #2563eb; transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <span class="badge">به‌زودی</span>
+        <h1 id="title">این استان</h1>
+        <p>صفحه این استان هنوز در حال ساخت است. تا آماده شدنش می‌توانید استان‌های آماده را ببینید.</p>
+
+        <div class="progress"><span>پیشرفت ساخت صفحات</span><span id="count"></span></div>
+        <div class="bar"><span id="fill"></span></div>
+
+        <div class="ready-title">استان‌های آماده</div>
+        <div class="chips" id="ready"></div>
+
+        <a class="back" id="back" href="../index.html">بازگشت به نقشه</a>
+    </main>
+
+    <script src="../provinces-data.js"></script>
+    <script>
+        const params = new URLSearchParams(location.search);
+        const id = params.get('id');
+        const name = PROVINCE_NAMES[id];
+
+        if (name) {
+            document.getElementById('title').textContent = 'استان ' + name;
+            document.title = name + ' (در حال ساخت) | نقشه هوشمند ایران';
+            document.getElementById('back').href = '../index.html#' + encodeURIComponent(id);
+        }
+
+        const total = Object.keys(PROVINCE_NAMES).length;
+        const ready = ACTIVE_PROVINCES.length;
+        document.getElementById('count').textContent = ready.toLocaleString('fa-IR') + ' از ' + total.toLocaleString('fa-IR');
+        requestAnimationFrame(() => {
+            document.getElementById('fill').style.width = Math.round(ready / total * 100) + '%';
+        });
+
+        const chips = document.getElementById('ready');
+        ACTIVE_PROVINCES
+            .filter(pid => PROVINCE_NAMES[pid])
+            .sort((a, b) => PROVINCE_NAMES[a].localeCompare(PROVINCE_NAMES[b], 'fa-IR'))
+            .forEach(pid => {
+                const a = document.createElement('a');
+                a.href = pid + '.html';
+                a.textContent = PROVINCE_NAMES[pid];
+                chips.appendChild(a);
+            });
+    </script>
+</body>
+</html>

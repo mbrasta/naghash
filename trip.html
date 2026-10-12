@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سفر من | نقشه هوشمند ایران</title>
+<style>
+:root { --bg:#f4f6fb; --card:#fff; --ink:#1f2937; --muted:#6b7280; --brand:#1d4ed8; --line:#e5e7eb; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); line-height:1.8; font-family:'Vazirmatn','Segoe UI',Tahoma,sans-serif; }
+header { background:linear-gradient(135deg,#1e3a8a,#2563eb); color:#fff; padding:28px 16px 60px; text-align:center; }
+header h1 { margin:0 0 6px; font-size:1.8rem; }
+header p { margin:0; opacity:.85; }
+.back { display:inline-block; margin-bottom:14px; color:#fff; text-decoration:none; background:rgba(255,255,255,.18); padding:6px 16px; border-radius:30px; font-size:.9rem; }
+main { max-width:860px; margin:-36px auto 40px; padding:0 14px; }
+.panel { background:var(--card); border-radius:16px; padding:18px; box-shadow:0 8px 26px rgba(0,0,0,.08); margin-bottom:18px; }
+.bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; }
+.bar label { font-weight:600; }
+select, button { font:inherit; }
+select { padding:6px 10px; border-radius:8px; border:1px solid var(--line); background:#fff; }
+.btns { display:flex; flex-wrap:wrap; gap:8px; }
+.btn { padding:7px 16px; border-radius:30px; border:1px solid var(--brand); background:#fff; color:var(--brand); cursor:pointer; font-size:.9rem; }
+.btn.primary { background:var(--brand); color:#fff; }
+.btn.danger { border-color:#dc2626; color:#dc2626; }
+.day h2 { margin:0 0 10px; font-size:1.15rem; color:var(--brand); display:flex; justify-content:space-between; }
+.day h2 small { color:var(--muted); font-weight:400; font-size:.85rem; }
+.item { display:flex; gap:12px; align-items:flex-start; padding:12px 0; border-top:1px solid var(--line); }
+.item:first-of-type { border-top:0; }
+.ico { font-size:1.7rem; line-height:1.2; }
+.info { flex:1; min-width:0; }
+.info b { display:block; }
+.info small { color:var(--muted); }
+.info p { margin:2px 0 0; font-size:.88rem; color:#4b5563; }
+.acts { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; align-items:center; }
+.acts button { border:1px solid var(--line); background:#fff; border-radius:8px; padding:2px 9px; cursor:pointer; }
+.acts a { font-size:.85rem; color:var(--brand); text-decoration:none; border:1px solid var(--line); border-radius:8px; padding:2px 9px; }
+.day .empty { padding:8px 4px; font-size:.9rem; }
+.empty { text-align:center; padding:40px 10px; color:var(--muted); }
+.empty a { color:var(--brand); }
+.empty .big { font-size:3rem; }
+.chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.chips a { text-decoration:none; background:#eef2ff; color:#3730a3; padding:6px 14px; border-radius:30px; font-size:.9rem; }
+.toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#222; color:#fff; padding:10px 22px; border-radius:30px; opacity:0; transition:.3s; pointer-events:none; }
+.toast.show { opacity:1; }
+@media (max-width:600px){ header h1{font-size:1.4rem} .panel{padding:14px} }
+@media print { header .back, .btns, .acts, .chips, #addmore { display:none !important; } header { background:none; color:#000; padding:10px; } main { margin-top:0; } .panel { box-shadow:none; border:1px solid #ccc; break-inside:avoid; } }
+</style>
+</head>
+<body>
+<header>
+  <a class="back" href="index.html">← بازگشت به نقشه</a>
+  <h1>🧳 سفر من</h1>
+  <p>جاذبه‌هایی که انتخاب کرده‌اید را روی روزهای سفر بچینید</p>
+</header>
+<main id="app"></main>
+<div class="toast" id="toast" role="status"></div>
+<script src="trip.js"></script>
+</body>
+</html>

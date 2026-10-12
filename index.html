@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نقشه هوشمند ایران</title>
+    <style>
+        @font-face {
+            font-family: 'Vazirmatn';
+            src: local('Vazirmatn'), url('fonts/Vazirmatn.woff2') format('woff2');
+            font-weight: 100 900;
+            font-display: swap;
+        }
+        :root {
+            --bg-color: #0f172a;
+            --province-fill: #1e293b;
+            --province-stroke: #475569;
+            --province-hover: #3b82f6;
+            --active-fill: #1d4ed8;
+            --active-hover: #2563eb;
+            --sidebar-width: 300px;
+            --glass: rgba(30, 41, 59, 0.78);
+        }
+        * { box-sizing: border-box; }
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            background-color: var(--bg-color);
+            font-family: 'Vazirmatn', 'Tahoma', system-ui, sans-serif;
+            color: white;
+            overflow: hidden;
+        }
+        .main-wrapper {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* ── نوار کناری ── */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: #111827;
+            border-left: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+        .sidebar-header {
+            padding: 20px;
+            background: #1e293b;
+            text-align: center;
+        }
+        .trip-link { display:flex; align-items:center; justify-content:center; gap:6px; margin:0 0 12px; padding:8px 12px; border-radius:10px; background:rgba(96,165,250,.15); border:1px solid rgba(96,165,250,.4); color:#93c5fd; text-decoration:none; font-size:.9rem; }
+        .trip-link:hover { background:rgba(96,165,250,.28); }
+        .trip-link span:not(:empty) { background:#2563eb; color:#fff; border-radius:20px; padding:0 8px; font-size:.8rem; }
+        .sidebar-header h2 { margin: 0 0 15px 0; font-size: 1.1rem; color: #60a5fa; }
+        #search-input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            background: #0f172a;
+            color: white;
+            outline: none;
+            font-family: inherit;
+        }
+        #search-input:focus { border-color: var(--province-hover); }
+        .province-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 0; margin: 0;
+            list-style: none;
+        }
+        .province-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            transition: 0.2s;
+        }
+        .province-item:hover, .province-item.active { background: #2563eb; }
+        .province-item.soon { color: #94a3b8; }
+        .province-item.soon:hover, .province-item.soon.active { color: #fff; }
+        .tag {
+            font-size: 0.72rem;
+            padding: 2px 9px;
+            border-radius: 50px;
+            white-space: nowrap;
+        }
+        .tag.ready { background: rgba(34,197,94,0.18); color: #4ade80; }
+        .tag.soon { background: rgba(148,163,184,0.15); color: #94a3b8; }
+        .province-item:hover .tag, .province-item.active .tag { background: rgba(255,255,255,0.2); color: #fff; }
+        #no-result { padding: 20px; text-align: center; color: #94a3b8; font-size: 0.9rem; display: none; }
+
+        /* ── نقشه ── */
+        #map-container {
+            flex-grow: 1;
+            position: relative;
+            background: radial-gradient(circle, #1e293b 0%, #0f172a 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 0;
+            overflow: hidden;
+        }
+        #map-container svg {
+            width: 95vw;
+            max-width: 1150px;
+            height: auto;
+            max-height: 90vh;
+            margin: 0 auto;
+            display: block;
+            touch-action: none;
+            cursor: grab;
+        }
+        #map-container svg.dragging { cursor: grabbing; }
+        #map-container svg path {
+            fill: var(--province-fill);
+            stroke: var(--province-stroke);
+            stroke-width: 0.6;
+            vector-effect: non-scaling-stroke;
+            transition: fill 0.25s, stroke 0.25s, filter 0.25s;
+            cursor: pointer;
+            outline: none;
+        }
+        #map-container svg path:hover { fill: #334155; }
+        #map-container svg path.is-active { fill: var(--active-fill); stroke: #93c5fd; }
+        #map-container svg path.is-active:hover { fill: var(--active-hover); }
+        #map-container svg path:focus-visible { stroke: #fbbf24; stroke-width: 2; }
+        #map-container svg path.highlight-province {
+            fill: var(--province-hover) !important;
+            stroke: #fff !important;
+            filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.8));
+        }
+        #loader { max-width: 420px; text-align: center; line-height: 1.9; padding: 20px; color: #cbd5e1; }
+
+        /* ── دکمه‌های زوم ── */
+        .zoom-controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 5;
+        }
+        .zoom-controls button {
+            width: 42px; height: 42px;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            background: var(--glass);
+            backdrop-filter: blur(8px);
+            color: #fff;
+            font-size: 1.3rem;
+            line-height: 1;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+        }
+        .zoom-controls button:hover { background: #2563eb; }
+
+        /* ── راهنما ── */
+        .legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--glass);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 8px 14px;
+            font-size: 0.8rem;
+            color: #cbd5e1;
+            display: flex;
+            gap: 14px;
+            z-index: 5;
+        }
+        .legend i {
+            display: inline-block;
+            width: 11px; height: 11px;
+            border-radius: 3px;
+            margin-left: 6px;
+            vertical-align: -1px;
+        }
+
+        /* ── کارت اطلاعات ── */
+        #info-card {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            width: 280px;
+            display: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 6;
+        }
+        #info-card h3 { margin: 0; color: #60a5fa; display: flex; align-items: center; gap: 10px; }
+        #info-card p { font-size: 0.9rem; margin: 12px 0; line-height: 1.7; }
+        .card-close {
+            position: absolute;
+            top: 8px; left: 10px;
+            background: none; border: 0;
+            color: #94a3b8; font-size: 1.3rem;
+            cursor: pointer; line-height: 1;
+        }
+        .card-close:hover { color: #fff; }
+        .card-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background: #2563eb;
+            border-radius: 6px;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: 0.2s;
+        }
+        .card-btn:hover { background: #1d4ed8; }
+        .card-btn.soon { background: #475569; }
+        .card-btn.soon:hover { background: #64748b; }
+        button.card-btn { border: 0; cursor: pointer; font-family: inherit; }
+        .card-note {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #fbbf24;
+            min-height: 1.4em;
+            opacity: 0;
+        }
+        .card-note.show { animation: noteIn 0.35s ease forwards; }
+        @keyframes noteIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        #tooltip {
+            position: fixed;
+            background: rgba(0,0,0,0.85);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            pointer-events: none;
+            z-index: 100;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .main-wrapper { flex-direction: column-reverse; }
+            .sidebar { width: 100%; height: 40vh; }
+            #info-card { left: 10px; right: 10px; bottom: 10px; width: auto; }
+            .legend { display: none; }
+            .zoom-controls { top: 10px; left: 10px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            * { transition: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-wrapper">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>نقشه هوشمند ایران</h2>
+                <a href="trip.html" class="trip-link" id="trip-link">🧳 سفر من <span id="trip-count"></span></a>
+                <input type="text" id="search-input" placeholder="جستجوی نام استان..." autocomplete="off">
+            </div>
+            <ul class="province-list" id="province-list"></ul>
+            <div id="no-result">استانی با این نام پیدا نشد</div>
+        </aside>
+        <main id="map-container">
+            <div id="loader">در حال بارگذاری نقشه...</div>
+            <div class="legend">
+                <span><i style="background:#1d4ed8"></i>صفحه آماده</span>
+                <span><i style="background:#1e293b;border:1px solid #475569"></i>به‌زودی</span>
+            </div>
+            <div class="zoom-controls">
+                <button id="zoom-in" aria-label="بزرگ‌نمایی" title="بزرگ‌نمایی">+</button>
+                <button id="zoom-out" aria-label="کوچک‌نمایی" title="کوچک‌نمایی">−</button>
+                <button id="zoom-reset" aria-label="نمای کامل" title="نمای کامل">⟲</button>
+            </div>
+            <div id="info-card"></div>
+        </main>
+    </div>
+    <div id="tooltip"></div>
+
+    <script src="provinces-data.js"></script>
+    <script>
+        const activeProvinces = new Set(ACTIVE_PROVINCES);
+
+        // نقشه اول از فایل محلی، بعد از اینترنت
+        const mapUrls = ['iran.svg', 'https://raw.githubusercontent.com/nastoohir/iran-map-svg/master/iran.svg'];
+
+        const container = document.getElementById('map-container');
+        const listContainer = document.getElementById('province-list');
+        const tooltip = document.getElementById('tooltip');
+        const infoCard = document.getElementById('info-card');
+        const searchInput = document.getElementById('search-input');
+        const noResult = document.getElementById('no-result');
+
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const MAX_ZOOM = 10;
+
+        let svg = null;
+        let vb0 = null;          // نمای کامل
+        let vb = null;           // نمای فعلی
+        let anim = 0;
+        let currentSelectedId = null;
+        let dragMoved = false;
+
+        /* ───────── کمکی‌ها ───────── */
+        function normalizeFa(str) {
+            return str.replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[ً-ٟ‌]/g, '').toLowerCase();
+        }
+        const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+        /* ───────── بارگذاری نقشه ───────── */
+        async function loadMapText() {
+            for (const url of mapUrls) {
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) continue;
+                    const text = await response.text();
+                    if (text.includes('<svg')) return text;
+                } catch (e) { /* منبع بعدی */ }
+            }
+            throw new Error('map not available');
+        }
+
+        async function init() {
+            buildList();
+            try {
+                const svgText = await loadMapText();
+                container.insertAdjacentHTML('afterbegin', svgText);
+                document.getElementById('loader').remove();
+                setupMap();
+                selectFromHash(false);
+            } catch (e) {
+                document.getElementById('loader').textContent =
+                    'خطا در بارگذاری نقشه. فایل iran.svg را کنار index.html بگذارید و سایت را با یک وب‌سرور محلی باز کنید (نه با دابل‌کلیک روی فایل).';
+            }
+        }
+
+        /* ───────── لیست کنار ───────── */
+        function buildList() {
+            const items = Object.keys(PROVINCE_NAMES)
+                .map(id => ({ id, name: PROVINCE_NAMES[id], active: activeProvinces.has(id) }))
+                .sort((a, b) => (b.active - a.active) || a.name.localeCompare(b.name, 'fa-IR'));
+
+            items.forEach(({ id, name, active }) => {
+                const li = document.createElement('li');
+                li.className = 'province-item' + (active ? '' : ' soon');
+                li.dataset.provId = id;
+                li.dataset.name = normalizeFa(name);
+                li.innerHTML = '<span></span><span class="tag ' + (active ? 'ready' : 'soon') + '">' +
+                               (active ? 'آماده' : 'به‌زودی') + '</span>';
+                li.firstChild.textContent = name;
+                li.addEventListener('click', () => selectProvince(id));
+                listContainer.appendChild(li);
+            });
+
+            searchInput.addEventListener('input', () => {
+                const term = normalizeFa(searchInput.value.trim());
+                let visible = 0;
+                listContainer.querySelectorAll('.province-item').forEach(item => {
+                    const show = item.dataset.name.includes(term);
+                    item.style.display = show ? 'flex' : 'none';
+                    if (show) visible++;
+                });
+                noResult.style.display = visible ? 'none' : 'block';
+            });
+        }
+
+        /* ───────── انتخاب استان ───────── */
+        function clearHighlight() {
+            container.querySelectorAll('.highlight-province').forEach(p => p.classList.remove('highlight-province'));
+        }
+
+        function highlightProvince(provId) {
+            clearHighlight();
+            const path = svg && svg.querySelector('path[id="' + provId + '"]');
+            if (path) path.classList.add('highlight-province');
+        }
+
+        function selectProvince(provId, opts) {
+            const { zoom = true, updateHash = true } = opts || {};
+            if (!PROVINCE_NAMES[provId]) return;
+            currentSelectedId = provId;
+            highlightProvince(provId);
+            showInfo(provId);
+            if (zoom) zoomToProvince(provId);
+            if (updateHash && location.hash.slice(1) !== provId) location.hash = provId;
+        }
+
+        function clearSelection(updateHash) {
+            currentSelectedId = null;
+            clearHighlight();
+            infoCard.style.display = 'none';
+            listContainer.querySelectorAll('.province-item.active').forEach(i => i.classList.remove('active'));
+            resetView();
+            if (updateHash !== false && location.hash) {
+                history.pushState(null, '', location.pathname + location.search);
+            }
+        }
+
+        function selectFromHash(zoom) {
+            const id = decodeURIComponent(location.hash.slice(1));
+            if (id && PROVINCE_NAMES[id]) {
+                if (id !== currentSelectedId) selectProvince(id, { zoom: zoom !== false, updateHash: false });
+            } else if (currentSelectedId) {
+                clearSelection(false);
+            }
+        }
+
+        function showInfo(provId) {
+            const farsiName = PROVINCE_NAMES[provId];
+            const isActive = activeProvinces.has(provId);
+            const targetUrl = isActive
+                ? 'provinces/' + provId + '.html'
+                : 'provinces/coming-soon.html?id=' + encodeURIComponent(provId);
+
+            infoCard.style.display = 'block';
+            infoCard.innerHTML = '';
+
+            const close = document.createElement('button');
+            close.className = 'card-close';
+            close.setAttribute('aria-label', 'بستن');
+            close.textContent = '×';
+            close.addEventListener('click', () => clearSelection());
+
+            const h3 = document.createElement('h3');
+            h3.textContent = farsiName;
+            const tag = document.createElement('span');
+            tag.className = 'tag ' + (isActive ? 'ready' : 'soon');
+            tag.textContent = isActive ? 'آماده' : 'به‌زودی';
+            h3.appendChild(tag);
+
+            const p = document.createElement('p');
+            p.textContent = isActive
+                ? 'اینجا می‌توانید اطلاعات مربوط به استان ' + farsiName + ' را مشاهده کنید.'
+                : 'صفحه استان ' + farsiName + ' هنوز در حال ساخت است.';
+
+            if (isActive) {
+                const a = document.createElement('a');
+                a.className = 'card-btn';
+                a.href = targetUrl;
+                a.textContent = 'ورود به پنل استان';
+                infoCard.append(close, h3, p, a);
+            } else {
+                // استان ساخته‌نشده: به صفحه دیگری نمی‌رود، فقط پیام «در حال ساخت» نشان می‌دهد
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'card-btn soon';
+                btn.textContent = 'مشاهده (در حال ساخت)';
+
+                const note = document.createElement('div');
+                note.className = 'card-note';
+                note.setAttribute('role', 'status');
+                note.setAttribute('aria-live', 'polite');
+
+                btn.addEventListener('click', () => {
+                    note.textContent = '🚧 در حال ساخت';
+                    note.classList.remove('show');
+                    void note.offsetWidth; // ری‌استارت انیمیشن
+                    note.classList.add('show');
+                });
+
+                infoCard.append(close, h3, p, btn, note);
+            }
+
+            listContainer.querySelectorAll('.province-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.provId === provId);
+                if (item.dataset.provId === provId) item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            });
+        }
+
+        /* ───────── زوم و جابجایی ───────── */
+        function applyVb() {
+            svg.setAttribute('viewBox', vb.x + ' ' + vb.y + ' ' + vb.w + ' ' + vb.h);
+        }
+
+        function initViewBox() {
+            const base = svg.viewBox && svg.viewBox.baseVal;
+            if (base && base.width > 0) {
+                vb0 = { x: base.x, y: base.y, w: base.width, h: base.height };
+            } else {
+                const b = svg.getBBox();
+                vb0 = { x: b.x, y: b.y, w: b.width, h: b.height };
+            }
+            vb = { ...vb0 };
+            applyVb();
+        }
+
+        function clientToSvg(cx, cy) {
+            const pt = svg.createSVGPoint();
+            pt.x = cx; pt.y = cy;
+            return pt.matrixTransform(svg.getScreenCTM().inverse());
+        }
+
+        function animateTo(target, ms) {
+            cancelAnimationFrame(anim);
+            if (reduceMotion) { vb = { ...target }; applyVb(); return; }
+            const from = { ...vb };
+            const t0 = performance.now();
+            const dur = ms || 500;
+            (function step(now) {
+                const k = Math.min(1, (now - t0) / dur);
+                const e = 1 - Math.pow(1 - k, 3);
+                vb = {
+                    x: from.x + (target.x - from.x) * e,
+                    y: from.y + (target.y - from.y) * e,
+                    w: from.w + (target.w - from.w) * e,
+                    h: from.h + (target.h - from.h) * e
+                };
+                applyVb();
+                if (k < 1) anim = requestAnimationFrame(step);
+            })(t0);
+        }
+
+        function zoomAt(factor, cx, cy) {
+            cancelAnimationFrame(anim);
+            const p = clientToSvg(cx, cy);
+            const nw = clamp(vb.w * factor, vb0.w / MAX_ZOOM, vb0.w);
+            const f = nw / vb.w;
+            vb = {
+                x: p.x - (p.x - vb.x) * f,
+                y: p.y - (p.y - vb.y) * f,
+                w: nw,
+                h: nw * vb0.h / vb0.w
+            };
+            applyVb();
+        }
+
+        function zoomCenter(factor) {
+            const r = svg.getBoundingClientRect();
+            zoomAt(factor, r.left + r.width / 2, r.top + r.height / 2);
+        }
+
+        function resetView() {
+            if (vb0) animateTo({ ...vb0 });
+        }
+
+        function zoomToProvince(provId) {
+            const path = svg && svg.querySelector('path[id="' + provId + '"]');
+            if (!path) return;
+            const r = path.getBoundingClientRect();
+            const p1 = clientToSvg(r.left, r.top);
+            const p2 = clientToSvg(r.right, r.bottom);
+            const bw = Math.abs(p2.x - p1.x), bh = Math.abs(p2.y - p1.y);
+            const cx = (p1.x + p2.x) / 2, cy = (p1.y + p2.y) / 2;
+            const aspect = vb0.w / vb0.h;
+            const nw = clamp(Math.max(bw * 1.8, bh * 1.8 * aspect), vb0.w / MAX_ZOOM, vb0.w);
+            const nh = nw / aspect;
+            animateTo({ x: cx - nw / 2, y: cy - nh / 2, w: nw, h: nh });
+        }
+
+        function setupPanZoom() {
+            const pointers = new Map();
+            let startX = 0, startY = 0, pinchDist = 0;
+
+            svg.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                zoomAt(Math.exp(e.deltaY * 0.0015), e.clientX, e.clientY);
+            }, { passive: false });
+
+            svg.addEventListener('pointerdown', (e) => {
+                pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                dragMoved = false;
+                startX = e.clientX; startY = e.clientY;
+                if (pointers.size === 2) {
+                    const [a, b] = [...pointers.values()];
+                    pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+                }
+            });
+
+            svg.addEventListener('pointermove', (e) => {
+                const prev = pointers.get(e.pointerId);
+                if (!prev) return;
+
+                if (pointers.size === 2) {
+                    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                    const [a, b] = [...pointers.values()];
+                    const d = Math.hypot(a.x - b.x, a.y - b.y);
+                    if (pinchDist) zoomAt(pinchDist / d, (a.x + b.x) / 2, (a.y + b.y) / 2);
+                    pinchDist = d;
+                    dragMoved = true;
+                    return;
+                }
+
+                if (!dragMoved && Math.hypot(e.clientX - startX, e.clientY - startY) < 5) return;
+                if (!dragMoved) {
+                    dragMoved = true;
+                    cancelAnimationFrame(anim);
+                    svg.classList.add('dragging');
+                    tooltip.style.display = 'none';
+                    try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+                }
+                const k = svg.getScreenCTM().a;
+                vb.x -= (e.clientX - prev.x) / k;
+                vb.y -= (e.clientY - prev.y) / k;
+                pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                applyVb();
+            });
+
+            const end = (e) => {
+                pointers.delete(e.pointerId);
+                if (pointers.size < 2) pinchDist = 0;
+                if (pointers.size === 0) svg.classList.remove('dragging');
+            };
+            svg.addEventListener('pointerup', end);
+            svg.addEventListener('pointercancel', end);
+
+            document.getElementById('zoom-in').addEventListener('click', () => zoomCenter(1 / 1.5));
+            document.getElementById('zoom-out').addEventListener('click', () => zoomCenter(1.5));
+            document.getElementById('zoom-reset').addEventListener('click', () => resetView());
+        }
+
+        /* ───────── آماده‌سازی نقشه ───────── */
+        function setupMap() {
+            svg = container.querySelector('svg');
+            initViewBox();
+            setupPanZoom();
+
+            svg.querySelectorAll('path').forEach(path => {
+                const id = path.getAttribute('id');
+                if (!id || !PROVINCE_NAMES[id]) {
+                    if (id && (id.includes('sea') || id.includes('gulf') || id.includes('island'))) {
+                        path.style.fill = '#0b1627';
+                    }
+                    path.style.pointerEvents = 'none';
+                    return;
+                }
+
+                const name = PROVINCE_NAMES[id];
+                if (activeProvinces.has(id)) path.classList.add('is-active');
+                path.setAttribute('tabindex', '0');
+                path.setAttribute('role', 'button');
+                path.setAttribute('aria-label', name);
+
+                path.addEventListener('click', () => {
+                    if (dragMoved) { dragMoved = false; return; }
+                    selectProvince(id);
+                });
+                path.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectProvince(id); }
+                });
+
+                path.addEventListener('mousemove', (e) => {
+                    if (dragMoved) return;
+                    tooltip.style.display = 'block';
+                    tooltip.textContent = name + (activeProvinces.has(id) ? '' : ' (به‌زودی)');
+                    tooltip.style.left = (e.clientX + 15) + 'px';
+                    tooltip.style.top = (e.clientY - 30) + 'px';
+                });
+                path.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+            });
+
+            // کلیک روی فضای خالی نقشه: انتخاب برداشته می‌شود
+            svg.addEventListener('click', (e) => {
+                if (dragMoved) { dragMoved = false; return; }
+                if (e.target === svg && currentSelectedId) clearSelection();
+            });
+        }
+
+        window.addEventListener('hashchange', () => selectFromHash(true));
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && currentSelectedId) clearSelection();
+        });
+
+        window.onload = init;
+    </script>
+    <script>
+        try { var n = (JSON.parse(localStorage.getItem('trip.v1')) || {items: []}).items.length; if (n) document.getElementById('trip-count').textContent = n; } catch (e) {}
+    </script>
+</body>
+</html>
