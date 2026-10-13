@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>نقاش</title>
-    <link rel="icon" type="image/png" href="provinces/pic/zamin.png">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/zamin.png">
+    <link rel="apple-touch-icon" href="icons/zamin.png">
     <style>
         @font-face {
             font-family: 'Vazirmatn';
@@ -51,9 +54,6 @@
             background: #1e293b;
             text-align: center;
         }
-        .trip-link { display:flex; align-items:center; justify-content:center; gap:6px; margin:0 0 12px; padding:8px 12px; border-radius:10px; background:rgba(96,165,250,.15); border:1px solid rgba(96,165,250,.4); color:#93c5fd; text-decoration:none; font-size:.9rem; }
-        .trip-link:hover { background:rgba(96,165,250,.28); }
-        .trip-link span:not(:empty) { background:#2563eb; color:#fff; border-radius:20px; padding:0 8px; font-size:.8rem; }
         .sidebar-header h2 { margin: 0 0 15px 0; font-size: 1.1rem; color: #60a5fa; }
         #search-input {
             width: 100%;
@@ -94,6 +94,33 @@
         .tag.ready { background: rgba(34,197,94,0.18); color: #4ade80; }
         .tag.soon { background: rgba(148,163,184,0.15); color: #94a3b8; }
         .province-item:hover .tag, .province-item.active .tag { background: rgba(255,255,255,0.2); color: #fff; }
+        .trip-link {
+            display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; padding: 9px;
+            border-radius: 8px; background: #0f172a; border: 1px solid #475569; color: #fff; text-decoration: none; font-size: .92rem; transition: .2s;
+        }
+        .trip-link:hover { background: #2563eb; border-color: #2563eb; }
+        .trip-link b { min-width: 22px; padding: 0 6px; border-radius: 20px; background: rgba(255,255,255,.15); font-size: .8rem; }
+        .trip-link.has b { background: #fbbf24; color: #111; }
+        .filters { margin-top: 10px; text-align: right; background: #0f172a; border: 1px solid #475569; border-radius: 8px; padding: 8px 12px; }
+        .filters summary { cursor: pointer; font-size: .92rem; color: #cbd5e1; }
+        .f-group { margin-top: 10px; }
+        .f-group > span { display: block; font-size: .78rem; color: #94a3b8; margin-bottom: 5px; }
+        .f-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .f-chips button {
+            font-family: inherit; font-size: .8rem; padding: 3px 11px; border-radius: 50px; cursor: pointer;
+            border: 1px solid #475569; background: transparent; color: #cbd5e1; transition: .2s;
+        }
+        .f-chips button:hover { border-color: #60a5fa; }
+        .f-chips button[aria-pressed="true"] { background: #2563eb; border-color: #2563eb; color: #fff; }
+        .f-result { margin-top: 10px; font-size: .8rem; color: #fbbf24; min-height: 1.2em; }
+        #f-reset { margin-top: 6px; font-family: inherit; font-size: .78rem; background: none; border: 0; color: #94a3b8; cursor: pointer; text-decoration: underline; padding: 0; }
+        .nm-t { display: block; }
+        .hit { display: block; font-size: .72rem; color: #fbbf24; }
+        .province-item:hover .hit, .province-item.active .hit { color: #fff; }
+        .province-item.f-dim { opacity: .4; }
+        .province-item.f-match { box-shadow: inset -3px 0 0 #fbbf24; }
+        #map-container svg path.f-match { stroke: #fbbf24; stroke-width: 1.8; }
+        #map-container svg path.f-dim { opacity: .35; }
         #no-result { padding: 20px; text-align: center; color: #94a3b8; font-size: 0.9rem; display: none; }
 
         /* ── نقشه ── */
@@ -271,8 +298,15 @@
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h2>نقشه هوشمند ایران</h2>
-                <a href="trip.html" class="trip-link" id="trip-link">🧳 سفر من <span id="trip-count"></span></a>
-                <input type="text" id="search-input" placeholder="جستجوی نام استان..." autocomplete="off">
+                <input type="text" id="search-input" placeholder="جستجوی استان یا جاذبه..." autocomplete="off">
+                <a class="trip-link" id="trip-link" href="trip.html">🧳 برنامه‌ی سفر من <b id="trip-count">۰</b></a>
+                <details class="filters" id="filters" open>
+                    <summary>🔎 چه سفری می‌خواهی؟</summary>
+                    <div class="f-group"><span>نوع سفر</span><div class="f-chips" id="f-themes"></div></div>
+                    <div class="f-group"><span>فصل سفر</span><div class="f-chips" id="f-seasons"></div></div>
+                    <div class="f-result" id="f-result" role="status" aria-live="polite"></div>
+                    <button type="button" id="f-reset" hidden>پاک‌کردن فیلتر</button>
+                </details>
             </div>
             <ul class="province-list" id="province-list"></ul>
             <div id="no-result">استانی با این نام پیدا نشد</div>
@@ -294,8 +328,15 @@
     <div id="tooltip"></div>
 
     <script src="provinces-data.js"></script>
+    <script src="provinces/province-meta.js"></script>
+    <script src="provinces/trip-core.js"></script>
     <script>
         const activeProvinces = new Set(ACTIVE_PROVINCES);
+        const META = window.PROVINCE_META || {};
+        const THEMES = { history: 'تاریخی', nature: 'طبیعت', food: 'غذا و سوغات', adventure: 'ماجراجویی' };
+        const SEASONS = { spring: 'بهار', summer: 'تابستان', autumn: 'پاییز', winter: 'زمستان' };
+        const fTheme = new Set();
+        let fSeason = null;
 
         // نقشه اول از فایل محلی، بعد از اینترنت
         const mapUrls = ['iran.svg', 'https://raw.githubusercontent.com/nastoohir/iran-map-svg/master/iran.svg'];
@@ -338,11 +379,14 @@
 
         async function init() {
             buildList();
+            buildFilters();
+            refreshTripCount();
             try {
                 const svgText = await loadMapText();
                 container.insertAdjacentHTML('afterbegin', svgText);
                 document.getElementById('loader').remove();
                 setupMap();
+                applyFilter();
                 selectFromHash(false);
             } catch (e) {
                 document.getElementById('loader').textContent =
@@ -361,9 +405,14 @@
                 li.className = 'province-item' + (active ? '' : ' soon');
                 li.dataset.provId = id;
                 li.dataset.name = normalizeFa(name);
-                li.innerHTML = '<span></span><span class="tag ' + (active ? 'ready' : 'soon') + '">' +
+                li.innerHTML = '<span class="nm"><span class="nm-t"></span><small class="hit"></small></span><span class="tag ' + (active ? 'ready' : 'soon') + '">' +
                                (active ? 'آماده' : 'به‌زودی') + '</span>';
-                li.firstChild.textContent = name;
+                li.querySelector('.nm-t').textContent = name;
+                li.dataset.idx = String(listContainer.children.length);
+                const pm = META && META[id];
+                // جست‌وجو علاوه بر استان، نام جاذبه‌ها و شهر مرکزی را هم پوشش می‌دهد
+                li.dataset.name = normalizeFa(name + ' ' + (pm ? pm.city.name + ' ' + pm.attractions.map(a => a[1]).join(' ') : ''));
+                li.dataset.title = normalizeFa(name);
                 li.addEventListener('click', () => selectProvince(id));
                 listContainer.appendChild(li);
             });
@@ -375,6 +424,14 @@
                     const show = item.dataset.name.includes(term);
                     item.style.display = show ? 'flex' : 'none';
                     if (show) visible++;
+                    // اگر فقط نام جاذبه پیدا شد، آن را زیر نام استان نشان بده
+                    const hit = item.querySelector('.hit');
+                    hit.textContent = '';
+                    const pm = META && META[item.dataset.provId];
+                    if (term && show && pm && !item.dataset.title.includes(term)) {
+                        const a = pm.attractions.find(x => normalizeFa(x[1]).includes(term));
+                        if (a) hit.textContent = '↳ ' + a[1];
+                    }
                 });
                 noResult.style.display = visible ? 'none' : 'block';
             });
@@ -671,15 +728,88 @@
             });
         }
 
+        /* ───────── فیلتر «چه سفری می‌خواهی؟» ───────── */
+        function provMatches(id) {
+            const m = META[id];
+            if (!m) return false;
+            const okTheme = !fTheme.size || m.themes.some(t => fTheme.has(t));
+            const okSeason = !fSeason || m.best.includes(fSeason);
+            return okTheme && okSeason;
+        }
+
+        function applyFilter() {
+            const on = fTheme.size > 0 || !!fSeason;
+            const items = [...listContainer.querySelectorAll('.province-item')];
+            const matched = new Set();
+            Object.keys(PROVINCE_NAMES).forEach(id => { if (on && provMatches(id)) matched.add(id); });
+
+            items.forEach(li => {
+                const id = li.dataset.provId;
+                li.classList.toggle('f-match', on && matched.has(id));
+                li.classList.toggle('f-dim', on && !matched.has(id));
+            });
+            // استان‌های مناسب بالای لیست؛ بقیه به ترتیب قبلی
+            items.sort((a, b) => {
+                const d = (on ? (matched.has(b.dataset.provId) - matched.has(a.dataset.provId)) : 0);
+                return d || (a.dataset.idx - b.dataset.idx);
+            }).forEach(li => listContainer.appendChild(li));
+
+            if (svg) svg.querySelectorAll('path').forEach(p => {
+                const id = p.getAttribute('id');
+                if (!PROVINCE_NAMES[id]) return;
+                p.classList.toggle('f-match', on && matched.has(id));
+                p.classList.toggle('f-dim', on && !matched.has(id));
+            });
+
+            const res = document.getElementById('f-result');
+            document.getElementById('f-reset').hidden = !on;
+            if (!on) res.textContent = '';
+            else if (matched.size) res.textContent = matched.size.toLocaleString('fa-IR') + ' استان مناسب پیدا شد (فقط استان‌های آماده بررسی می‌شوند).';
+            else res.textContent = 'استان آماده‌ای با این ترکیب پیدا نشد؛ برای بقیه‌ی استان‌ها هنوز اطلاعاتی نداریم.';
+        }
+
+        function buildFilters() {
+            function chips(boxId, dict, get, toggle) {
+                const box = document.getElementById(boxId);
+                Object.keys(dict).forEach(k => {
+                    const b = document.createElement('button');
+                    b.type = 'button'; b.textContent = dict[k]; b.dataset.k = k;
+                    b.setAttribute('aria-pressed', 'false');
+                    b.addEventListener('click', () => { toggle(k); box.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(get(x.dataset.k)))); applyFilter(); });
+                    box.appendChild(b);
+                });
+            }
+            chips('f-themes', THEMES, k => fTheme.has(k), k => { fTheme.has(k) ? fTheme.delete(k) : fTheme.add(k); });
+            chips('f-seasons', SEASONS, k => fSeason === k, k => { fSeason = fSeason === k ? null : k; });
+            document.getElementById('f-reset').addEventListener('click', () => {
+                fTheme.clear(); fSeason = null;
+                document.querySelectorAll('.f-chips button').forEach(b => b.setAttribute('aria-pressed', 'false'));
+                applyFilter();
+            });
+            if (window.matchMedia('(max-width: 768px)').matches) document.getElementById('filters').open = false;
+        }
+
+        /* ───────── شمارنده‌ی «سفر من» ───────── */
+        function refreshTripCount() {
+            if (!window.TripCore) return;
+            const n = TripCore.Store.count();
+            document.getElementById('trip-count').textContent = n.toLocaleString('fa-IR');
+            document.getElementById('trip-link').classList.toggle('has', n > 0);
+        }
+        window.addEventListener('tripchange', refreshTripCount);
+        window.addEventListener('pageshow', refreshTripCount);
+
+        // PWA
+        if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+            window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+        }
+
         window.addEventListener('hashchange', () => selectFromHash(true));
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && currentSelectedId) clearSelection();
         });
 
         window.onload = init;
-    </script>
-    <script>
-        try { var n = (JSON.parse(localStorage.getItem('trip.v1')) || {items: []}).items.length; if (n) document.getElementById('trip-count').textContent = n; } catch (e) {}
     </script>
 </body>
 </html>

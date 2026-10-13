@@ -1,59 +1,323 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>سفر من | نقشه هوشمند ایران</title>
-<style>
-:root { --bg:#f4f6fb; --card:#fff; --ink:#1f2937; --muted:#6b7280; --brand:#1d4ed8; --line:#e5e7eb; }
-* { box-sizing: border-box; }
-body { margin:0; background:var(--bg); color:var(--ink); line-height:1.8; font-family:'Vazirmatn','Segoe UI',Tahoma,sans-serif; }
-header { background:linear-gradient(135deg,#1e3a8a,#2563eb); color:#fff; padding:28px 16px 60px; text-align:center; }
-header h1 { margin:0 0 6px; font-size:1.8rem; }
-header p { margin:0; opacity:.85; }
-.back { display:inline-block; margin-bottom:14px; color:#fff; text-decoration:none; background:rgba(255,255,255,.18); padding:6px 16px; border-radius:30px; font-size:.9rem; }
-main { max-width:860px; margin:-36px auto 40px; padding:0 14px; }
-.panel { background:var(--card); border-radius:16px; padding:18px; box-shadow:0 8px 26px rgba(0,0,0,.08); margin-bottom:18px; }
-.bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; }
-.bar label { font-weight:600; }
-select, button { font:inherit; }
-select { padding:6px 10px; border-radius:8px; border:1px solid var(--line); background:#fff; }
-.btns { display:flex; flex-wrap:wrap; gap:8px; }
-.btn { padding:7px 16px; border-radius:30px; border:1px solid var(--brand); background:#fff; color:var(--brand); cursor:pointer; font-size:.9rem; }
-.btn.primary { background:var(--brand); color:#fff; }
-.btn.danger { border-color:#dc2626; color:#dc2626; }
-.day h2 { margin:0 0 10px; font-size:1.15rem; color:var(--brand); display:flex; justify-content:space-between; }
-.day h2 small { color:var(--muted); font-weight:400; font-size:.85rem; }
-.item { display:flex; gap:12px; align-items:flex-start; padding:12px 0; border-top:1px solid var(--line); }
-.item:first-of-type { border-top:0; }
-.ico { font-size:1.7rem; line-height:1.2; }
-.info { flex:1; min-width:0; }
-.info b { display:block; }
-.info small { color:var(--muted); }
-.info p { margin:2px 0 0; font-size:.88rem; color:#4b5563; }
-.acts { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; align-items:center; }
-.acts button { border:1px solid var(--line); background:#fff; border-radius:8px; padding:2px 9px; cursor:pointer; }
-.acts a { font-size:.85rem; color:var(--brand); text-decoration:none; border:1px solid var(--line); border-radius:8px; padding:2px 9px; }
-.day .empty { padding:8px 4px; font-size:.9rem; }
-.empty { text-align:center; padding:40px 10px; color:var(--muted); }
-.empty a { color:var(--brand); }
-.empty .big { font-size:3rem; }
-.chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
-.chips a { text-decoration:none; background:#eef2ff; color:#3730a3; padding:6px 14px; border-radius:30px; font-size:.9rem; }
-.toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#222; color:#fff; padding:10px 22px; border-radius:30px; opacity:0; transition:.3s; pointer-events:none; }
-.toast.show { opacity:1; }
-@media (max-width:600px){ header h1{font-size:1.4rem} .panel{padding:14px} }
-@media print { header .back, .btns, .acts, .chips, #addmore { display:none !important; } header { background:none; color:#000; padding:10px; } main { margin-top:0; } .panel { box-shadow:none; border:1px solid #ccc; break-inside:avoid; } }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>برنامه‌ی سفر من | نقشه هوشمند ایران</title>
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/icon-192.png">
+    <style>
+        @font-face {
+            font-family: 'Vazirmatn';
+            src: local('Vazirmatn'), url('fonts/Vazirmatn.woff2') format('woff2');
+            font-weight: 100 900;
+            font-display: swap;
+        }
+        :root {
+            --bg: #0f172a; --panel: #1e293b; --panel2: #111827; --line: rgba(255,255,255,.1);
+            --blue: #3b82f6; --blue-soft: #60a5fa; --muted: #94a3b8; --warn: #fbbf24; --ok: #4ade80;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh; background: radial-gradient(circle at 50% 0%, #1e293b 0%, var(--bg) 70%);
+            color: #fff; font-family: 'Vazirmatn', Tahoma, system-ui, sans-serif; line-height: 1.8;
+        }
+        .top {
+            position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 14px; padding: 12px 20px;
+            background: rgba(15,23,42,.9); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
+        }
+        .top h1 { margin: 0; font-size: 1.2rem; color: var(--blue-soft); }
+        .back { color: #fff; text-decoration: none; padding: 6px 14px; border: 1px solid var(--line); border-radius: 50px; font-size: .9rem; }
+        .back:hover { background: var(--blue); border-color: var(--blue); }
+        main { max-width: 860px; margin: 0 auto; padding: 24px 16px 80px; }
+
+        .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 18px; }
+        .controls label { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: .95rem; }
+        .controls input {
+            width: 70px; padding: 8px; border-radius: 8px; border: 1px solid #475569; background: var(--bg);
+            color: #fff; font-family: inherit; font-size: 1rem; text-align: center;
+        }
+        button, .btn {
+            font-family: inherit; font-size: .92rem; cursor: pointer; padding: 8px 16px; border-radius: 50px; text-decoration: none;
+            border: 1px solid var(--line); background: var(--panel); color: #fff; transition: .2s; display: inline-block;
+        }
+        button:hover, .btn:hover { background: var(--blue); border-color: var(--blue); }
+        button.primary, .btn.primary { background: var(--blue); border-color: var(--blue); }
+        button.danger:hover { background: #dc2626; border-color: #dc2626; }
+        button:disabled { opacity: .4; cursor: default; }
+        button:disabled:hover { background: var(--panel); border-color: var(--line); }
+        :focus-visible { outline: 3px solid var(--warn); outline-offset: 2px; }
+
+        .summary { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+        .chip { padding: 6px 16px; border-radius: 50px; background: var(--panel); border: 1px solid var(--line); font-size: .9rem; }
+        .chip b { color: var(--blue-soft); }
+        .hint { font-size: .85rem; color: var(--muted); margin: 6px 0 22px; }
+
+        .banner {
+            padding: 14px 18px; border-radius: 14px; margin-bottom: 18px; background: rgba(59,130,246,.12);
+            border: 1px solid rgba(96,165,250,.4);
+        }
+        .banner p { margin: 0 0 10px; }
+        .banner .row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+        .empty { text-align: center; padding: 50px 20px; background: var(--panel); border: 1px dashed #475569; border-radius: 18px; }
+        .empty p { color: var(--muted); }
+
+        .day { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 18px 18px 8px; margin-bottom: 18px; }
+        .day-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+        .day-head h2 { margin: 0; font-size: 1.1rem; color: var(--blue-soft); }
+        .day-head small { color: var(--muted); }
+        .day-route { font-size: .85rem; padding: 5px 14px; }
+        ol.stops { list-style: none; margin: 0; padding: 0; }
+        .stop { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+        .stop:first-child { border-top: 0; }
+        .num {
+            flex: none; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%;
+            background: var(--blue); font-weight: 700; font-size: .9rem;
+        }
+        .info { flex: 1; min-width: 0; }
+        .info b { display: block; }
+        .info small { color: var(--muted); }
+        .gap { color: var(--muted); font-size: .8rem; }
+        .gap.far { color: var(--warn); }
+        .tools { display: flex; gap: 4px; flex: none; }
+        .tools button { padding: 4px 10px; font-size: .85rem; border-radius: 8px; }
+        .tools a { padding: 4px 10px; font-size: .85rem; border-radius: 8px; }
+
+        .print-only { display: none; }
+        .toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+            background: #000c; color: #fff; padding: 10px 22px; border-radius: 40px; font-size: .95rem; transition: .3s; z-index: 50;
+        }
+        .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+        @media (max-width: 600px) {
+            .stop { flex-wrap: wrap; }
+            .tools { width: 100%; justify-content: flex-end; }
+            .top { padding: 10px 12px; }
+        }
+        @media print {
+            body { background: #fff; color: #000; }
+            .top, .controls, .tools, .banner, .toast, .day-route, .hint { display: none !important; }
+            main { padding: 0; max-width: none; }
+            .day, .chip, .empty { background: #fff; border-color: #bbb; color: #000; break-inside: avoid; }
+            .day-head h2, .chip b { color: #000; }
+            .info small, .gap, .day-head small { color: #444; }
+            .num { background: #000; color: #fff; }
+            .print-only { display: block; margin-top: 20px; font-size: .85rem; direction: ltr; word-break: break-all; }
+        }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+    </style>
 </head>
 <body>
-<header>
-  <a class="back" href="index.html">← بازگشت به نقشه</a>
-  <h1>🧳 سفر من</h1>
-  <p>جاذبه‌هایی که انتخاب کرده‌اید را روی روزهای سفر بچینید</p>
-</header>
-<main id="app"></main>
-<div class="toast" id="toast" role="status"></div>
-<script src="trip.js"></script>
+    <header class="top">
+        <a class="back" href="index.html">← نقشه</a>
+        <h1>🧳 برنامه‌ی سفر من</h1>
+    </header>
+
+    <main>
+        <div id="shared" class="banner" hidden>
+            <p>این برنامه از یک لینک اشتراکی باز شده است و هنوز در «سفر من» شما ذخیره نشده.</p>
+            <div class="row">
+                <button class="primary" id="save-shared" type="button">ذخیره به‌عنوان سفر من</button>
+                <button id="merge-shared" type="button">افزودن به سفر فعلی من</button>
+            </div>
+        </div>
+
+        <div class="controls" id="controls">
+            <label>تعداد روز <input id="days" type="number" min="1" max="30" inputmode="numeric" aria-label="تعداد روز سفر"></label>
+            <button id="smart" type="button" title="جاذبه‌ها را طوری می‌چیند که هر مقصد به نزدیک‌ترین مقصد بعدی برسد">چیدمان هوشمند</button>
+            <button id="print" type="button">چاپ / PDF</button>
+            <button id="share" class="primary" type="button">اشتراک‌گذاری</button>
+            <button id="copy" type="button">کپی لینک</button>
+            <button id="clear" class="danger" type="button">پاک‌کردن</button>
+        </div>
+
+        <div class="summary" id="summary"></div>
+        <p class="hint" id="hint"></p>
+
+        <div id="empty" class="empty" hidden>
+            <h2>هنوز چیزی اضافه نکرده‌اید</h2>
+            <p>در صفحه‌ی هر استان، روی کارت جاذبه‌ها دکمه‌ی «افزودن به سفر من» را بزنید.</p>
+            <a class="btn primary" href="index.html">انتخاب از روی نقشه</a>
+        </div>
+
+        <div id="plan"></div>
+        <p class="print-only" id="print-link"></p>
+    </main>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="provinces/province-meta.js"></script>
+    <script src="provinces/trip-core.js"></script>
+    <script>
+    (function () {
+        var TC = window.TripCore, S = TC.Store;
+        var $ = function (id) { return document.getElementById(id); };
+        var shared = TC.decodeShare(location.hash);          // حالت فقط‌خواندنی از لینک اشتراکی
+        var FAR_KM = 150;
+
+        function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+        var tt;
+        function toast(m) { var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(function () { t.classList.remove('show'); }, 2200); }
+
+        function state() {
+            var ids = shared ? shared.ids : S.ids();
+            var n = ids.length;
+            var want = shared ? shared.days : S.get().days;
+            var days = n ? Math.min(Math.max(want || Math.ceil(n / 3), 1), n) : 1;
+            return { ids: ids, n: n, days: days };
+        }
+
+        // تقسیم متوازن: روزهای اول یک مورد بیشتر می‌گیرند
+        function split(ids, days) {
+            var base = Math.floor(ids.length / days), extra = ids.length % days, out = [], k = 0;
+            for (var d = 0; d < days; d++) { var c = base + (d < extra ? 1 : 0); out.push(ids.slice(k, k + c)); k += c; }
+            return out;
+        }
+
+        function shareUrl(st) {
+            return location.href.split('#')[0] + '#' + TC.encodeShare(st.ids, st.days);
+        }
+        function shareText(st) {
+            var lines = ['برنامه‌ی سفر من (' + TC.faNum(st.days) + ' روز)'];
+            split(st.ids, st.days).forEach(function (d, i) {
+                lines.push('روز ' + TC.faNum(i + 1) + ': ' + d.map(function (id) { return TC.find(id).name; }).join('، '));
+            });
+            lines.push(shareUrl(st));
+            return lines.join('\n');
+        }
+
+        function render() {
+            var st = state(), plan = $('plan');
+            $('shared').hidden = !shared;
+            $('controls').style.display = '';
+            ['smart', 'clear'].forEach(function (i) { $(i).hidden = !!shared; });
+            $('days').disabled = !!shared;
+            $('days').max = Math.max(st.n, 1);
+            $('days').value = st.days;
+            ['print', 'share', 'copy', 'smart'].forEach(function (i) { $(i).disabled = st.n === 0; });
+            $('clear').disabled = st.n === 0;
+            $('days').disabled = $('days').disabled || st.n === 0;
+
+            $('empty').hidden = st.n > 0;
+            plan.innerHTML = '';
+            $('summary').innerHTML = '';
+            $('hint').textContent = '';
+            $('print-link').textContent = '';
+            if (!st.n) return;
+
+            var parts = split(st.ids, st.days), total = 0, provs = {};
+            var gi = 0, prev = null;
+
+            parts.forEach(function (day, di) {
+                var dayKm = 0, prevInDay = null;
+                var box = document.createElement('section'); box.className = 'day';
+                var ol = document.createElement('ol'); ol.className = 'stops';
+
+                day.forEach(function (id) {
+                    var a = TC.find(id); provs[a.prov] = 1;
+                    var gap = prev ? TC.distKm(prev, a) : null;
+                    if (prevInDay) dayKm += TC.distKm(prevInDay, a);
+                    if (gap != null) total += gap;
+                    var idx = gi++;
+                    var li = document.createElement('li'); li.className = 'stop';
+                    li.innerHTML =
+                        '<span class="num">' + TC.faNum(idx + 1) + '</span>' +
+                        '<div class="info"><b>' + esc(a.name) + '</b><small>' + esc(a.provName) + (a.approx ? ' · موقعیت تقریبی' : '') + '</small>' +
+                        (gap != null ? '<div class="gap' + (gap > FAR_KM ? ' far' : '') + '">' + (gap > FAR_KM ? '⚠ ' : '↳ ') + TC.fmtKm(gap) + ' از مقصد قبلی' +
+                            (gap > FAR_KM ? ' (خط مستقیم؛ احتمالاً نیاز به زمان سفر جداگانه)' : '') + '</div>' : '') + '</div>';
+                    var tools = document.createElement('div'); tools.className = 'tools';
+                    if (!shared) {
+                        tools.innerHTML =
+                            '<button type="button" data-act="up" data-i="' + idx + '" aria-label="انتقال ' + esc(a.name) + ' به بالا"' + (idx === 0 ? ' disabled' : '') + '>▲</button>' +
+                            '<button type="button" data-act="down" data-i="' + idx + '" aria-label="انتقال ' + esc(a.name) + ' به پایین"' + (idx === st.n - 1 ? ' disabled' : '') + '>▼</button>' +
+                            '<button type="button" data-act="del" data-i="' + idx + '" aria-label="حذف ' + esc(a.name) + '">✕</button>';
+                    }
+                    var go = document.createElement('a'); go.className = 'btn'; go.textContent = '🧭'; go.href = TC.dirUrl(a); go.target = '_blank'; go.rel = 'noopener';
+                    go.setAttribute('aria-label', 'مسیریابی به ' + a.name); go.title = 'مسیریابی';
+                    tools.appendChild(go); li.appendChild(tools); ol.appendChild(li);
+                    prev = a; prevInDay = a;
+                });
+
+                var head = document.createElement('div'); head.className = 'day-head';
+                head.innerHTML = '<h2>روز ' + TC.faNum(di + 1) + '</h2><small>' + TC.faNum(day.length) + ' مکان' +
+                    (day.length > 1 ? ' · ≈ ' + TC.fmtKm(dayKm) + ' بین مکان‌ها' : '') + '</small>';
+                var pts = day.map(TC.find), route = document.createElement('a');
+                route.className = 'btn day-route'; route.target = '_blank'; route.rel = 'noopener'; route.textContent = '🧭 مسیر این روز';
+                var mid = pts.slice(1, -1).slice(0, 9);
+                route.href = pts.length === 1 ? TC.dirUrl(pts[0]) : TC.dirUrl(pts[pts.length - 1], pts[0], mid);
+                if (pts.length - 2 > 9) route.title = 'گوگل‌مپ حداکثر ۹ ایستگاه میانی می‌پذیرد؛ بقیه حذف شده‌اند';
+                head.appendChild(route);
+                box.append(head, ol); plan.appendChild(box);
+            });
+
+            var provCount = Object.keys(provs).length;
+            $('summary').innerHTML =
+                '<span class="chip"><b>' + TC.faNum(st.n) + '</b> مکان</span>' +
+                '<span class="chip"><b>' + TC.faNum(provCount) + '</b> استان</span>' +
+                '<span class="chip"><b>' + TC.faNum(st.days) + '</b> روز</span>' +
+                '<span class="chip">مجموع ≈ <b>' + TC.fmtKm(total) + '</b></span>';
+            $('hint').textContent = 'فاصله‌ها خط مستقیم‌اند و مسیر جاده‌ای معمولاً بیشتر است. زمان رفت‌وآمد بین مقصدها را جداگانه حساب کنید.';
+            $('print-link').textContent = 'لینک این برنامه: ' + shareUrl(st);
+        }
+
+        /* ── رویدادها ── */
+        $('plan').addEventListener('click', function (e) {
+            var b = e.target.closest('button[data-act]'); if (!b || shared) return;
+            var i = +b.getAttribute('data-i'), ids = S.ids(), act = b.getAttribute('data-act');
+            if (act === 'del') ids.splice(i, 1);
+            else {
+                var j = act === 'up' ? i - 1 : i + 1;
+                if (j < 0 || j >= ids.length) return;
+                var t = ids[i]; ids[i] = ids[j]; ids[j] = t;
+            }
+            S.set(ids);
+        });
+        $('days').addEventListener('change', function () {
+            if (shared) return;
+            var v = parseInt(this.value, 10);
+            S.setDays(isNaN(v) ? 0 : Math.min(Math.max(v, 1), 30));
+        });
+        $('smart').addEventListener('click', function () { S.set(TC.smartOrder(S.ids())); toast('جاذبه‌ها از نزدیک به نزدیک چیده شدند'); });
+        $('clear').addEventListener('click', function () { if (confirm('کل برنامه‌ی سفر پاک شود؟')) S.clear(); });
+        $('print').addEventListener('click', function () { window.print(); });
+
+        function copy(text, okMsg) {
+            function fallback() {
+                var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+                document.body.appendChild(ta); ta.select();
+                var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+                document.body.removeChild(ta);
+                if (ok) toast(okMsg); else window.prompt('این متن را کپی کنید:', text);
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { toast(okMsg); }, fallback);
+            else fallback();
+        }
+        $('copy').addEventListener('click', function () { copy(shareUrl(state()), 'لینک کپی شد'); });
+        $('share').addEventListener('click', function () {
+            var st = state();
+            if (navigator.share) {
+                navigator.share({ title: 'برنامه‌ی سفر من', text: shareText(st).split('\n').slice(0, -1).join('\n'), url: shareUrl(st) }).catch(function () {});
+            } else copy(shareText(st), 'متن برنامه کپی شد');
+        });
+
+        $('save-shared').addEventListener('click', function () {
+            S.set(shared.ids, shared.days); shared = null; history.replaceState(null, '', location.pathname); toast('در سفر من ذخیره شد'); render();
+        });
+        $('merge-shared').addEventListener('click', function () {
+            var cur = S.ids(); shared.ids.forEach(function (id) { if (cur.indexOf(id) < 0) cur.push(id); });
+            S.set(cur); shared = null; history.replaceState(null, '', location.pathname); toast('به سفر شما اضافه شد'); render();
+        });
+
+        window.addEventListener('tripchange', render);
+        window.addEventListener('hashchange', function () { shared = TC.decodeShare(location.hash); render(); });
+        render();
+
+        if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+            window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+        }
+    })();
+    </script>
 </body>
 </html>
