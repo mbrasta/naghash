@@ -95,7 +95,7 @@
         mapSec.innerHTML =
             '<h2>جاذبه‌ها روی نقشه</h2>' +
             '<div id="prov-map" class="prov-map" role="region" aria-label="نقشه‌ی جاذبه‌های ' + esc(meta.name) + '"><p class="map-wait">نقشه با رسیدن به این بخش بارگذاری می‌شود…</p></div>' +
-            '<p class="map-note">نقشه: © مشارکت‌کنندگان <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>. ' +
+            '<p class="map-note">نقشه: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>. ' +
             'روی هر نشان بزنید تا به سفر اضافه یا مسیریابی کنید. موقعیت برخی مکان‌ها تقریبی است.</p>' +
             '<details class="map-list"><summary>فهرست مکان‌ها با لینک نقشه</summary><ol>' + list + '</ol></details>';
         if (attr && attr.nextSibling) attr.parentNode.insertBefore(mapSec, attr.nextSibling); else container.appendChild(mapSec);
@@ -114,7 +114,7 @@
             '<div class="info-card"><h3>🧭 نحوه‌ی رسیدن</h3><ul>' + access + '</ul></div>' +
             '<div class="info-card"><h3>☎ شماره‌های ضروری</h3><ul class="tel">' +
             '<li><a href="tel:110">۱۱۰</a> پلیس</li><li><a href="tel:115">۱۱۵</a> اورژانس</li><li><a href="tel:125">۱۲۵</a> آتش‌نشانی</li></ul></div>' +
-            '<div class="info-card"><h3>🎟 ساعت بازدید و بلیت</h3><p>ساعت کار و قیمت بلیت در فصل‌ها و تعطیلات تغییر می‌کند. پیش از رفتن با مجموعه‌ی مربوط تماس بگیرید یا از منابع رسمی میراث فرهنگی بررسی کنید.</p></div>' +
+            '<div class="info-card"><h3>🎟 ساعت بازدید و بلیت</h3><p>---</p></div>' +
             '</div>' + ticketTable() +
             '<p class="updated">آخرین به‌روزرسانی داده‌های این بخش: ' + esc(window.PROVINCE_META_UPDATED || '') + '</p>';
         (season || facts || mapSec).parentNode.insertBefore(info, season ? season.nextSibling : facts);
