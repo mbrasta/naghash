@@ -3,11 +3,11 @@
     var TD = g.TravelData, TC = g.TripCore, META = g.PROVINCE_META;
     var CART_KEY = 'iranCart.v1', ORIGIN_KEY = 'iranOrigin.v1';
     var stemNow, destCity;
-    var root, st, offers = [], isDemo = true, cart = [], lastFocus;
+    var root, st, offers = [], isDemo = false, mode = 'links', cart = [], lastFocus;
 
     function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
     function fa(n) { return TC ? TC.faNum(n) : String(n); }
-    function money(n) { return fa(Math.round(n).toLocaleString('en-US')) + ' تومان'; }
+    function money(n) { if (n == null) return 'در سایت'; return fa(Math.round(n).toLocaleString('en-US')) + ' تومان'; }
     function dur(m) { return m ? (m >= 60 ? fa(Math.floor(m / 60)) + ' ساعت' : '') + (m % 60 ? (m >= 60 ? ' و ' : '') + fa(m % 60) + ' دقیقه' : '') : ''; }
     function dayLabel(d) {
         try { return new Intl.DateTimeFormat('fa-IR-u-ca-persian', { weekday: 'short', month: 'long', day: 'numeric' }).format(new Date(d + 'T12:00:00')); }
@@ -51,7 +51,7 @@
         if (st.types.length && st.types.indexOf(o.type) < 0) return false;
         if (st.company.length && st.company.indexOf(o.company) < 0) return false;
         if (st.provider.length && st.provider.indexOf(o.provider) < 0) return false;
-        if (st.date && o.date !== st.date) return false;
+        if (st.date && !o.link && o.date !== st.date) return false;
         if (st.maxPrice && o.price > st.maxPrice) return false;
         if (st.q) {
             var hay = [o.company, o.from, o.to, o.cls, TD.PROVIDERS[o.provider].name, TD.TYPES[o.type].label].join(' ');
@@ -79,11 +79,11 @@
             '<fieldset><legend>نوع</legend>' + Object.keys(TD.TYPES).map(function (k) {
                 return chk('types', k, TD.TYPES[k].icon + ' ' + TD.TYPES[k].label, st.types.indexOf(k) >= 0);
             }).join('') + '</fieldset>' +
-            '<fieldset><legend>تاریخ</legend><select class="tv-date" aria-label="تاریخ"><option value="">همه‌ی روزها</option>' +
+            '<fieldset><legend>تاریخ سفر</legend><select class="tv-date" aria-label="تاریخ"><option value="">' + (mode === 'links' ? 'فردا' : 'همه‌ی روزها') + '</option>' +
             TD.days(10).map(function (d) { return '<option value="' + d + '"' + (st.date === d ? ' selected' : '') + '>' + esc(dayLabel(d)) + '</option>'; }).join('') + '</select></fieldset>' +
-            '<fieldset><legend>حداکثر قیمت</legend><input type="range" class="tv-price" min="' + step + '" max="' + top + '" step="' + step + '" value="' + (st.maxPrice || top) + '" aria-label="حداکثر قیمت">' +
+            (mode === 'links' ? '' : '<fieldset><legend>حداکثر قیمت</legend><input type="range" class="tv-price" min="' + step + '" max="' + top + '" step="' + step + '" value="' + (st.maxPrice || top) + '" aria-label="حداکثر قیمت">' +
             '<output class="tv-price-out">' + (st.maxPrice ? money(st.maxPrice) : 'بدون محدودیت') + '</output></fieldset>' +
-            '<fieldset><legend>شرکت</legend>' + companies.map(function (c) { return chk('company', c, esc(c), st.company.indexOf(c) >= 0); }).join('') + '</fieldset>' +
+            '<fieldset><legend>شرکت</legend>' + companies.map(function (c) { return chk('company', c, esc(c), st.company.indexOf(c) >= 0); }).join('') + '</fieldset>') +
             '<fieldset><legend>سرویس‌دهنده</legend>' + Object.keys(TD.PROVIDERS).map(function (k) {
                 return chk('provider', k, esc(TD.PROVIDERS[k].name), st.provider.indexOf(k) >= 0);
             }).join('') + '</fieldset>' +
@@ -107,9 +107,9 @@
                 renderFilters(); renderMain();
             });
         });
-        box.querySelector('.tv-date').addEventListener('change', function (e) { st.date = e.target.value; renderList(); });
+        box.querySelector('.tv-date').addEventListener('change', function (e) { st.date = e.target.value; if (mode === 'links') fetchOffers(); else renderList(); });
         var pr = box.querySelector('.tv-price'), po = box.querySelector('.tv-price-out');
-        pr.addEventListener('input', function () {
+        if (pr) pr.addEventListener('input', function () {
             st.maxPrice = +pr.value >= +pr.max ? 0 : +pr.value;
             po.textContent = st.maxPrice ? money(st.maxPrice) : 'بدون محدودیت'; renderList();
         });
@@ -121,15 +121,22 @@
 
     function card(o) {
         var t = TD.TYPES[o.type], pv = TD.PROVIDERS[o.provider], on = inCart(o.id), hotel = o.type === 'hotel';
-        var route = hotel ? esc(o.company) + ' · ' + esc(o.to) : esc(o.from) + ' ← ' + esc(o.to);
+        var route = hotel ? esc(t.label) + ' در ' + esc(o.to) : esc(o.from) + ' ← ' + esc(o.to);
+        var add = '<button type="button" class="tv-add' + (on ? ' on' : '') + '" data-id="' + esc(o.id) + '" aria-pressed="' + on + '">' + (on ? '✓ در سبد' : '＋ افزودن به سبد') + '</button>';
+        if (o.link) {
+            return '<article class="tv-card link"><div class="tv-card-h"><span class="tv-type">' + t.icon + ' ' + t.label + '</span></div>' +
+                '<h3>' + route + '</h3><ul><li>' + esc(hotel ? 'ورود: ' : 'تاریخ سفر: ') + esc(dayLabel(o.date)) + '</li>' +
+                '<li class="tv-src">سرویس‌دهنده: ' + esc(pv.name) + '</li><li>قیمت و موجودی: در سایت ' + esc(pv.name) + '</li>' +
+                (o.generic ? '<li class="tv-src">این دکمه به صفحه‌ی اصلی سایت می‌رود؛ مبدا و مقصد را همان‌جا وارد کنید.</li>' : '') + '</ul>' +
+                '<div class="tv-card-f"><a class="tv-go" href="' + esc(o.url) + '" target="_blank" rel="noopener">جست‌وجو در ' + esc(pv.name) + ' ↗</a>' + add + '</div></article>';
+        }
         var times = hotel ? 'ورود ' + esc(o.depart) + ' · خروج ' + esc(o.arrive) : esc(o.depart) + ' تا ' + esc(o.arrive) + (o.durationMin ? ' · ' + dur(o.durationMin) : '');
         return '<article class="tv-card' + (o.demo ? ' demo' : '') + '"><div class="tv-card-h"><span class="tv-type">' + t.icon + ' ' + t.label + '</span>' +
             (o.demo ? '<span class="tv-demo">نمونه</span>' : '') + '</div>' +
-            '<h3>' + route + '</h3>' +
+            '<h3>' + (hotel ? esc(o.company) + ' · ' + esc(o.to) : route) + '</h3>' +
             '<ul><li>' + esc(hotel ? o.cls : o.company + ' · ' + o.cls) + '</li><li>' + esc(dayLabel(o.date)) + '</li><li>' + times + '</li>' +
             '<li>' + (hotel ? 'اتاق باقی‌مانده: ' : 'ظرفیت باقی‌مانده: ') + fa(o.seatsLeft) + '</li><li class="tv-src">منبع: ' + esc(pv.name) + '</li></ul>' +
-            '<div class="tv-card-f"><b>' + money(o.price) + (hotel ? ' <small>/ شب</small>' : '') + '</b>' +
-            '<button type="button" class="tv-add' + (on ? ' on' : '') + '" data-id="' + esc(o.id) + '" aria-pressed="' + on + '">' + (on ? '✓ در سبد' : '＋ افزودن به سبد') + '</button></div></article>';
+            '<div class="tv-card-f"><b>' + money(o.price) + (hotel ? ' <small>/ شب</small>' : '') + '</b>' + add + '</div></article>';
     }
 
     function renderList() {
@@ -137,7 +144,7 @@
         var list = offers.filter(matches).sort(function (a, b) {
             if (st.sort === 'time') return (a.date + a.depart).localeCompare(b.date + b.depart);
             if (st.sort === 'dur') return (a.durationMin || 1e9) - (b.durationMin || 1e9);
-            return a.price - b.price;
+            return (a.price == null ? 1e12 : a.price) - (b.price == null ? 1e12 : b.price);
         });
         var grid = main.querySelector('.tv-grid');
         grid.innerHTML = list.length ? list.map(card).join('') : '<p class="tv-empty">موردی با این فیلترها پیدا نشد.</p>';
@@ -150,14 +157,14 @@
     function renderCart() {
         var main = root.querySelector('.tv-main'), total = 0;
         var rows = cart.map(function (o) {
-            total += o.price; var pv = TD.PROVIDERS[o.provider] || { name: '' };
-            return '<li><div><b>' + TD.TYPES[o.type].icon + ' ' + (o.type === 'hotel' ? esc(o.company + ' · ' + o.to) : esc(o.from + ' ← ' + o.to)) + '</b>' +
-                '<small>' + esc(dayLabel(o.date)) + ' · ' + esc(o.depart) + ' · ' + esc(pv.name) + (o.demo ? ' · نمونه' : '') + '</small></div>' +
-                '<span>' + money(o.price) + '</span><a class="tv-open" href="' + esc(o.url) + '" target="_blank" rel="noopener">مشاهده در سایت</a>' +
+            if (o.price != null) total += o.price; var pv = TD.PROVIDERS[o.provider] || { name: '' };
+            return '<li><div><b>' + TD.TYPES[o.type].icon + ' ' + (o.type === 'hotel' ? esc((o.link ? 'اقامت' : o.company) + ' · ' + o.to) : esc(o.from + ' ← ' + o.to)) + '</b>' +
+                '<small>' + esc(dayLabel(o.date)) + (o.depart ? ' · ' + esc(o.depart) : '') + ' · ' + esc(pv.name) + (o.demo ? ' · نمونه' : '') + '</small></div>' +
+                '<span>' + money(o.price) + '</span><a class="tv-open" href="' + esc(o.url) + '" target="_blank" rel="noopener">' + (o.link ? 'جست‌وجو در سایت' : 'مشاهده در سایت') + '</a>' +
                 '<button type="button" class="tv-rm" data-id="' + esc(o.id) + '" aria-label="حذف">✕</button></li>';
         }).join('');
         main.innerHTML = '<div class="tv-cart-view"><h3>سبد انتخاب‌ها</h3>' + (cart.length ?
-            '<ul class="tv-cart-list">' + rows + '</ul><p class="tv-total">جمع: <b>' + money(total) + '</b></p>' +
+            '<ul class="tv-cart-list">' + rows + '</ul>' + (total ? '<p class="tv-total">جمع: <b>' + money(total) + '</b></p>' : '') +
             '<p class="tv-note">رزرو و پرداخت در این سایت انجام نمی‌شود؛ هر مورد را در سایت سرویس‌دهنده ببینید و قیمت نهایی را همان‌جا تأیید کنید.</p>' +
             '<button type="button" class="tv-clear">خالی کردن سبد</button>' : '<p class="tv-empty">سبد خالی است.</p>') +
             '<button type="button" class="tv-back">← بازگشت به بلیت‌ها</button></div>';
@@ -169,8 +176,8 @@
     function renderMain() {
         var main = root.querySelector('.tv-main');
         if (st.view === 'cart') { renderCart(); return; }
-        main.innerHTML = (isDemo ? '<p class="tv-banner" role="note">⚠ این فهرست نمونه (آزمایشی) است و قیمت و موجودی واقعی علی‌بابا، جاباما و رجا نیست. ' +
-            'برای قیمت دقیق از دکمه‌ی «مشاهده در سایت» در سبد استفاده کنید.</p>' : '') +
+        main.innerHTML = (isDemo ? '<p class="tv-banner" role="note">⚠ این فهرست نمونه (آزمایشی) است و قیمت و موجودی واقعی نیست.</p>' :
+            mode === 'links' ? '<p class="tv-banner" role="note">قیمت و موجودی در این سایت نمایش داده نمی‌شود. با «جست‌وجو در …» به سایت سرویس‌دهنده می‌روید و همان‌جا بلیت و قیمت واقعی را می‌بینید؛ رزرو هم آنجا انجام می‌شود.</p>' : '') +
             '<div class="tv-bar"><span class="tv-count"></span></div><div class="tv-grid"></div>';
         renderList();
     }
@@ -190,9 +197,9 @@
     function fetchOffers() {
         var token = st.token = (st.token || 0) + 1;
         root.querySelector('.tv-main').innerHTML = '<p class="tv-empty">در حال بارگذاری…</p>';
-        TD.load(stemNow, destCity, st.from).then(function (r) {
+        TD.load(stemNow, destCity, st.from, st.date).then(function (r) {
             if (token !== st.token) return;
-            offers = r.offers; isDemo = r.demo; render();
+            offers = r.offers; isDemo = r.demo; mode = r.mode; render();
         });
     }
     function open(stem) {

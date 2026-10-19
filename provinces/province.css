@@ -637,3 +637,7 @@ body.tv-lock { overflow: hidden; }
 }
 @media print { .tv-overlay { display: none !important; } }
 .tv-dest { margin-top: 6px; font-size: .9rem; } .tv-filters .tv-route { padding-bottom: 10px; border-bottom: 1px dashed #ccc; }
+.tv-go { font-size: .88rem; font-weight: 700; padding: 6px 12px; border-radius: 8px; background: var(--btn); color: #fff; text-decoration: none; }
+.tv-card.link { background: #f7faf6; border-color: #cfe0cf; }
+.tv-card.link .tv-add { background: #fff; color: var(--heading); border: 1px solid var(--heading); }
+.tv-card.link .tv-add.on { background: #2e9e4f; color: #fff; }
