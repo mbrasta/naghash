@@ -5,7 +5,7 @@
  *  - برای صفحه‌ها و کدها «اول کش، همزمان به‌روزرسانی» است.
  * هر وقت فایل‌های هسته را عوض کردید عدد VERSION را بالا ببرید.
  */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CORE = `core-${VERSION}`;
 const RUNTIME = `runtime-${VERSION}`;
 const IMG_LIMIT = 120;
@@ -14,7 +14,7 @@ const TILE_LIMIT = 200;
 const CORE_FILES = [
   './', 'index.html', 'trip.html', 'manifest.webmanifest', 'provinces-data.js', 'iran.svg',
   'fonts/Vazirmatn.woff2', 'icons/icon-192.png', 'icons/icon-512.png',
-  'provinces/province.css', 'provinces/province.js', 'provinces/province-meta.js', 'provinces/trip-core.js',
+  'provinces/province.css', 'provinces/province.js', 'provinces/province-meta.js', 'provinces/trip-core.js', 'provinces/travel-data.js', 'provinces/travel-modal.js',
   'provinces/coming-soon.html',
   'provinces/hamadan.html', 'provinces/isfahan.html', 'provinces/khuzestan.html', 'provinces/qazvin.html',
   'provinces/tehran.html', 'provinces/yazd.html', 'provinces/azerbaijan-west.html', 'provinces/fars.html', 'provinces/gilan.html'
