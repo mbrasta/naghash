@@ -5,7 +5,7 @@
  *  - برای صفحه‌ها و کدها «اول کش، همزمان به‌روزرسانی» است.
  * هر وقت فایل‌های هسته را عوض کردید عدد VERSION را بالا ببرید.
  */
-const VERSION = 'v6';
+const VERSION = 'v7';
 const CORE = `core-${VERSION}`;
 const RUNTIME = `runtime-${VERSION}`;
 const IMG_LIMIT = 120;

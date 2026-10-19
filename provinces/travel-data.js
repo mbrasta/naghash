@@ -97,7 +97,8 @@
      * تا وقتی قالبی جای‌گذاری نشده، دکمه به صفحه‌ی اصلی همان سایت می‌رود (و روی کارت همین نوشته می‌شود).
      */
     /* کد فرودگاه/شهر برای آدرس پرواز علی‌بابا. شهری که اینجا نیست (کرج، قم، قزوین، سمنان: بدون پرواز تجاری) کارت پرواز نمی‌گیرد.
-     * کدها از دانش عمومی IATA است؛ هر کدام را یک بار در علی‌بابا امتحان کنید. */
+     * کدها از دانش عمومی IATA است؛ هر کدام را یک بار در علی‌بابا امتحان کنید.
+     * قطار علی‌بابا هم از همین کدها استفاده می‌کند؛ اگر کد ایستگاه شهری فرق داشت، همین‌جا اصلاحش کنید. */
     var CITY_CODES = {
         'تهران': 'THR', 'مشهد': 'MHD', 'اصفهان': 'IFN', 'شیراز': 'SYZ', 'تبریز': 'TBZ', 'اهواز': 'AWZ', 'کرمانشاه': 'KSH', 'ارومیه': 'OMH',
         'رشت': 'RAS', 'زاهدان': 'ZAH', 'کرمان': 'KER', 'همدان': 'HDM', 'یزد': 'AZD', 'اردبیل': 'ADU', 'بندرعباس': 'BND', 'اراک': 'AJK',
@@ -105,8 +106,9 @@
         'یاسوج': 'YES', 'شهرکرد': 'CQD', 'بوشهر': 'BUZ'
     };
     var SEARCH = {
-        train: [{ provider: 'raja', url: 'https://www.raja.ir/' }, { provider: 'alibaba', url: 'https://www.alibaba.ir/' }],
-        flight: [{ provider: 'alibaba', url: 'https://www.alibaba.ir/flights/{fromCode}-{toCode}?adult=1&child=0&infant=0&departing={dateFa}' }],
+        train: [{ provider: 'raja', url: 'https://www.raja.ir/' },
+            { provider: 'alibaba', url: 'https://www.alibaba.ir/train/{fromCode}-{toCode}?adult=1&child=0&infant=0&departing={dateFa}&ticketType=Family&isExclusive=false&isTransitCar=false', home: 'https://www.alibaba.ir/' }],
+        flight: [{ provider: 'alibaba', url: 'https://www.alibaba.ir/flights/{fromCode}-{toCode}?adult=1&child=0&infant=0&departing={dateFa}', skipNoCode: true }],
         bus: [{ provider: 'alibaba', url: 'https://www.alibaba.ir/' }],
         hotel: [{ provider: 'jabama', url: 'https://www.jabama.com/' }, { provider: 'alibaba', url: 'https://www.alibaba.ir/' }]
     };
@@ -127,12 +129,14 @@
         Object.keys(SEARCH).forEach(function (type) {
             if (type !== 'hotel' && (!from || from === city)) return;
             SEARCH[type].forEach(function (x) {
-                if (/Code\}/.test(x.url) && (!CITY_CODES[from] || !CITY_CODES[city])) return;
+                var noCode = /Code\}/.test(x.url) && (!CITY_CODES[from] || !CITY_CODES[city]);
+                if (noCode && x.skipNoCode) return;            // پرواز: شهر بدون فرودگاه کارت ندارد
+                var tpl = noCode ? (x.home || x.url) : x.url;   // قطار: کد نبود → صفحه‌ی اصلی سایت
                 out.push({
                     id: 'link.' + type + '.' + x.provider + '.' + (type === 'hotel' ? '' : from + '.') + city + '.' + d,
                     type: type, provider: x.provider, company: TYPES[type].label, from: type === 'hotel' ? '' : from, to: city, date: d,
-                    depart: '', arrive: '', durationMin: 0, price: null, seatsLeft: 0, cls: '', url: fill(x.url, v), meta: {},
-                    link: true, generic: x.url.indexOf('{') < 0
+                    depart: '', arrive: '', durationMin: 0, price: null, seatsLeft: 0, cls: '', url: fill(tpl, v), meta: {},
+                    link: true, generic: tpl.indexOf('{') < 0
                 });
             });
         });
