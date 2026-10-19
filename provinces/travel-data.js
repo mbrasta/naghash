@@ -4,7 +4,7 @@
  * ⚠ خواندن مستقیم قیمت و موجودی از علی‌بابا، جاباما و رجا داخل مرورگر ممکن نیست
  *   (API عمومی ندارند، CORS مسدود است و شرایط استفاده اجازه نمی‌دهد). پس دو حالت داریم:
  *   1) حالت زنده: آدرس سرویس خودتان (یا API همکاری‌درآمدی) را در window.TRAVEL_API_URL بگذارید.
- *      درخواست:  GET {URL}?province=tehran&to=تهران   ←  پاسخ: { offers: [ ... ] } با قالب پایین.
+ *      درخواست:  GET {URL}?province=tehran&to=تهران&from=مشهد   ←  پاسخ: { offers: [ ... ] } با قالب پایین.
  *   2) حالت نمونه (پیش‌فرض): داده‌ی ساختگی و قطعی برای نمایش ساختار؛ همه‌ی کارت‌ها «نمونه» برچسب می‌خورند
  *      و دکمه‌ی «مشاهده در سایت» به صفحه‌ی اصلی سرویس می‌رود، نه یک بلیت واقعی.
  *
@@ -32,7 +32,10 @@
         bus: ['سیرو سفر', 'همسفر', 'ایران‌پیما', 'عدل‌رو'],
         hotel: ['هتل', 'هتل‌آپارتمان', 'اقامتگاه بوم‌گردی', 'ویلا و سوئیت']
     };
-    var ORIGINS = ['تهران', 'مشهد', 'شیراز', 'اصفهان', 'تبریز', 'اهواز', 'رشت', 'کرمان'];
+    /* شهرهای قابل انتخاب به‌عنوان مبدا (مرکز استان‌ها) */
+    var CITIES = ['تهران', 'مشهد', 'اصفهان', 'شیراز', 'تبریز', 'کرج', 'اهواز', 'قم', 'کرمانشاه', 'ارومیه', 'رشت', 'زاهدان', 'کرمان', 'همدان',
+        'یزد', 'اردبیل', 'بندرعباس', 'اراک', 'زنجان', 'سنندج', 'قزوین', 'خرم‌آباد', 'گرگان', 'ساری', 'بجنورد', 'بیرجند', 'ایلام',
+        'سمنان', 'یاسوج', 'شهرکرد', 'بوشهر'];
     var ALLOWED = { train: ['raja', 'alibaba'], flight: ['alibaba'], bus: ['alibaba'], hotel: ['jabama', 'alibaba'] };
 
     function seed(str) {
@@ -54,18 +57,17 @@
         return out;
     }
 
-    function demoOffers(stem, city) {
-        var R = seed('trip-demo:' + stem), out = [], dates = days(10), n = 0;
-        var origins = ORIGINS.filter(function (o) { return o !== city; });
+    function demoOffers(stem, city, from) {
+        var R = seed('trip-demo:' + stem + ':' + from), out = [], dates = days(10), n = 0;
         function pick(a) { return a[Math.floor(R() * a.length)]; }
-        ['train', 'flight', 'bus'].forEach(function (type) {
-            var count = type === 'flight' ? 10 : 8;
+        (from && from !== city ? ['train', 'flight', 'bus'] : []).forEach(function (type) {
+            var count = type === 'flight' ? 6 : 5;
             for (var i = 0; i < count; i++) {
-                var from = pick(origins), dur = type === 'flight' ? 60 + Math.floor(R() * 60) : type === 'train' ? 360 + Math.floor(R() * 420) : 300 + Math.floor(R() * 480);
+                var dur = type === 'flight' ? 60 + Math.floor(R() * 60) : type === 'train' ? 360 + Math.floor(R() * 420) : 300 + Math.floor(R() * 480);
                 var base = type === 'flight' ? 2200000 : type === 'train' ? 650000 : 420000;
                 var dep = 300 + Math.floor(R() * 17 * 60 / 15) * 15, prov = pick(ALLOWED[type]);
                 out.push({
-                    id: 'demo.' + stem + '.' + (++n), type: type, provider: prov, company: pick(COMPANIES[type]),
+                    id: 'demo.' + stem + '.' + from + '.' + (++n), type: type, provider: prov, company: pick(COMPANIES[type]),
                     from: from, to: city, date: pick(dates), depart: hhmm(dep), arrive: hhmm(dep + dur), durationMin: dur,
                     price: Math.round(base * (0.7 + R() * 1.1) / 10000) * 10000, seatsLeft: 1 + Math.floor(R() * 20),
                     cls: type === 'flight' ? 'اکونومی' : type === 'train' ? pick(['۴ نفره', '۶ نفره', 'VIP']) : pick(['معمولی', 'اسکانیا', 'VIP ۲۴ نفره']),
@@ -73,10 +75,11 @@
                 });
             }
         });
+        R = seed('trip-demo-hotel:' + stem);
         for (var h = 0; h < 8; h++) {
             var hp = pick(ALLOWED.hotel), stars = 2 + Math.floor(R() * 4);
             out.push({
-                id: 'demo.' + stem + '.' + (++n), type: 'hotel', provider: hp, company: pick(COMPANIES.hotel),
+                id: 'demo.' + stem + '.hotel.' + (++n), type: 'hotel', provider: hp, company: pick(COMPANIES.hotel),
                 from: '', to: city, date: pick(dates), depart: '۱۴:۰۰', arrive: '۱۲:۰۰', durationMin: 0,
                 price: Math.round((600000 + stars * 500000) * (0.7 + R() * 0.9) / 10000) * 10000,
                 seatsLeft: 1 + Math.floor(R() * 6), cls: stars + ' ستاره', url: PROVIDERS[hp].url,
@@ -87,16 +90,16 @@
     }
 
     /* برمی‌گرداند Promise<{offers, demo}> */
-    function load(stem, city) {
+    function load(stem, city, from) {
         var api = g.TRAVEL_API_URL;
         if (api) {
-            var u = api + (api.indexOf('?') < 0 ? '?' : '&') + 'province=' + encodeURIComponent(stem) + '&to=' + encodeURIComponent(city);
+            var u = api + (api.indexOf('?') < 0 ? '?' : '&') + 'province=' + encodeURIComponent(stem) + '&to=' + encodeURIComponent(city) + '&from=' + encodeURIComponent(from || '');
             return fetch(u).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (j) {
                 return { offers: (j.offers || []).filter(function (o) { return TYPES[o.type] && PROVIDERS[o.provider]; }), demo: false };
-            }).catch(function () { return { offers: demoOffers(stem, city), demo: true, failed: true }; });
+            }).catch(function () { return { offers: demoOffers(stem, city, from), demo: true, failed: true }; });
         }
-        return Promise.resolve({ offers: demoOffers(stem, city), demo: true });
+        return Promise.resolve({ offers: demoOffers(stem, city, from), demo: true });
     }
 
-    g.TravelData = { TYPES: TYPES, PROVIDERS: PROVIDERS, load: load, days: days };
+    g.TravelData = { CITIES: CITIES, TYPES: TYPES, PROVIDERS: PROVIDERS, load: load, days: days };
 })(window);

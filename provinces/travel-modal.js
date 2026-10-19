@@ -1,7 +1,8 @@
 /* پنجره‌ی «ساعت بازدید و بلیت»: نوار بالا (نام استان + سبد)، فیلترها (راست)، کارت‌های بلیت (چپ). */
 (function (g) {
     var TD = g.TravelData, TC = g.TripCore, META = g.PROVINCE_META;
-    var CART_KEY = 'iranCart.v1';
+    var CART_KEY = 'iranCart.v1', ORIGIN_KEY = 'iranOrigin.v1';
+    var stemNow, destCity;
     var root, st, offers = [], isDemo = true, cart = [], lastFocus;
 
     function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -14,6 +15,12 @@
     }
     function loadCart() { try { cart = JSON.parse(localStorage.getItem(CART_KEY)) || []; } catch (e) { cart = []; } }
     function saveCart() { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) {} }
+    function loadOrigin() {
+        var o = ''; try { o = localStorage.getItem(ORIGIN_KEY) || ''; } catch (e) {}
+        if (TD.CITIES.indexOf(o) < 0) o = '';
+        return o && o !== destCity ? o : (destCity === 'تهران' ? 'مشهد' : 'تهران');
+    }
+    function saveOrigin(o) { try { localStorage.setItem(ORIGIN_KEY, o); } catch (e) {} }
     function inCart(id) { return cart.some(function (o) { return o.id === id; }); }
 
     function build(stem) {
@@ -65,6 +72,9 @@
             return '<label class="tv-chk"><input type="checkbox" data-f="' + name + '" value="' + esc(val) + '"' + (on ? ' checked' : '') + '> ' + label + '</label>';
         }
         box.innerHTML =
+            '<fieldset class="tv-route"><legend>مبدا</legend><select class="tv-from" aria-label="مبدا">' +
+            TD.CITIES.map(function (c) { return '<option' + (c === st.from ? ' selected' : '') + (c === destCity ? ' disabled' : '') + '>' + esc(c) + '</option>'; }).join('') +
+            '</select><div class="tv-dest">مقصد: <b>' + esc(destCity) + '</b></div></fieldset>' +
             '<div class="tv-search"><input type="search" class="tv-q" placeholder="جستجو" aria-label="جستجو" value="' + esc(st.q) + '"><span aria-hidden="true">🔍</span></div>' +
             '<fieldset><legend>نوع</legend>' + Object.keys(TD.TYPES).map(function (k) {
                 return chk('types', k, TD.TYPES[k].icon + ' ' + TD.TYPES[k].label, st.types.indexOf(k) >= 0);
@@ -83,6 +93,9 @@
             }).join('') + '</select></fieldset>' +
             '<button type="button" class="tv-reset">پاک کردن فیلترها</button>';
 
+        box.querySelector('.tv-from').addEventListener('change', function (e) {
+            st.from = e.target.value; saveOrigin(st.from); st.company = []; fetchOffers();
+        });
         var q = box.querySelector('.tv-q');
         q.addEventListener('input', function () { st.q = q.value.trim(); renderList(); });
         box.querySelectorAll('input[type=checkbox]').forEach(function (c) {
@@ -174,18 +187,23 @@
     }
     function render() { updateBadge(); renderFilters(); renderMain(); }
 
+    function fetchOffers() {
+        var token = st.token = (st.token || 0) + 1;
+        root.querySelector('.tv-main').innerHTML = '<p class="tv-empty">در حال بارگذاری…</p>';
+        TD.load(stemNow, destCity, st.from).then(function (r) {
+            if (token !== st.token) return;
+            offers = r.offers; isDemo = r.demo; render();
+        });
+    }
     function open(stem) {
         var m = META && META[stem]; if (!m || !TD) return;
+        stemNow = stem; destCity = m.city.name;
         loadCart(); lastFocus = document.activeElement;
         if (!root) build(stem);
-        st = { types: [], company: [], provider: [], date: '', maxPrice: 0, q: '', sort: 'price', view: 'list' };
+        st = { types: [], company: [], provider: [], date: '', maxPrice: 0, q: '', sort: 'price', view: 'list', from: loadOrigin(), token: 0 };
         root.hidden = false; document.body.classList.add('tv-lock');
-        root.querySelector('.tv-main').innerHTML = '<p class="tv-empty">در حال بارگذاری…</p>';
-        updateBadge();
-        TD.load(stem, m.city.name).then(function (r) {
-            offers = r.offers; isDemo = r.demo; render();
-            root.querySelector('.tv-close').focus();
-        });
+        updateBadge(); renderFilters(); fetchOffers();
+        root.querySelector('.tv-close').focus();
     }
     function close() {
         if (!root) return; root.hidden = true; document.body.classList.remove('tv-lock');
