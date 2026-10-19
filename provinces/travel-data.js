@@ -6,8 +6,8 @@
  *   1) حالت زنده: پیش‌فرض /api/offers (فایل api/offers.js روی Vercel) است؛ بدون منبع تنظیم‌شده 503 می‌دهد و نمونه نشان داده می‌شود.
  *      آدرس دیگر را می‌توانید در window.TRAVEL_API_URL بگذارید.
  *      درخواست:  GET {URL}?province=tehran&to=تهران&from=مشهد   ←  پاسخ: { offers: [ ... ] } با قالب پایین.
- *   2) حالت نمونه (پیش‌فرض): داده‌ی ساختگی و قطعی برای نمایش ساختار؛ همه‌ی کارت‌ها «نمونه» برچسب می‌خورند
- *      و دکمه‌ی «مشاهده در سایت» به صفحه‌ی اصلی سرویس می‌رود، نه یک بلیت واقعی.
+ *   2) حالت لینک (پیش‌فرض بدون داده‌ی واقعی): کارت‌ها قیمت ندارند و دکمه‌ی «جست‌وجو در سایت» کاربر را با مبدا/مقصد/تاریخ
+ *      به جست‌وجوی همان سرویس می‌برد (قالب‌ها در SEARCH پایین). داده‌ی نمونه فقط با window.TRAVEL_DEMO = true برای توسعه.
  *
  * قالب هر پیشنهاد:
  *   { id, type:'train'|'flight'|'bus'|'hotel', provider:'alibaba'|'jabama'|'raja', company,
@@ -90,17 +90,62 @@
         return out;
     }
 
-    /* برمی‌گرداند Promise<{offers, demo}> */
-    function load(stem, city, from) {
+    /* ── حالت لینک: وقتی داده‌ی واقعی نیست، کاربر را با مبدا/مقصد/تاریخ به جست‌وجوی خود سایت می‌فرستیم ──
+     * قالب‌ها را خودتان از آدرس جست‌وجوی هر سایت در مرورگر کپی و اینجا جای‌گذاری کنید. جاهای قابل‌استفاده:
+     *   {from} {to} نام شهر · {fromCode} {toCode} کد شهر از CITY_CODES (اگر نبود همان نام) ·
+     *   {date} تاریخ میلادی 2026-10-20 · {dateFa} تاریخ شمسی 1405-07-28
+     * تا وقتی قالبی جای‌گذاری نشده، دکمه به صفحه‌ی اصلی همان سایت می‌رود (و روی کارت همین نوشته می‌شود).
+     */
+    var CITY_CODES = {};   // مثلاً { 'تهران': 'THR', 'مشهد': 'MHD' } اگر قالب سایت کد می‌خواهد
+    var SEARCH = {
+        train: [{ provider: 'raja', url: 'https://www.raja.ir/' }, { provider: 'alibaba', url: 'https://www.alibaba.ir/' }],
+        flight: [{ provider: 'alibaba', url: 'https://www.alibaba.ir/' }],
+        bus: [{ provider: 'alibaba', url: 'https://www.alibaba.ir/' }],
+        hotel: [{ provider: 'jabama', url: 'https://www.jabama.com/' }, { provider: 'alibaba', url: 'https://www.alibaba.ir/' }]
+    };
+    function faDate(d) {
+        try {
+            var parts = new Intl.DateTimeFormat('en-u-ca-persian-nu-latn', { year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date(d + 'T12:00:00')), o = {};
+            parts.forEach(function (p) { o[p.type] = p.value; });
+            return o.year + '-' + o.month + '-' + o.day;
+        } catch (e) { return d; }
+    }
+    function fill(tpl, v) {
+        return tpl.replace(/\{(\w+)\}/g, function (m, k) { return v[k] == null ? m : encodeURIComponent(v[k]); });
+    }
+    function linkOffers(stem, city, from, date) {
+        var out = [], d = date || days(2)[1], v = {
+            from: from, to: city, fromCode: CITY_CODES[from] || from, toCode: CITY_CODES[city] || city, date: d, dateFa: faDate(d)
+        };
+        Object.keys(SEARCH).forEach(function (type) {
+            if (type !== 'hotel' && (!from || from === city)) return;
+            SEARCH[type].forEach(function (x) {
+                out.push({
+                    id: 'link.' + type + '.' + x.provider + '.' + (type === 'hotel' ? '' : from + '.') + city + '.' + d,
+                    type: type, provider: x.provider, company: TYPES[type].label, from: type === 'hotel' ? '' : from, to: city, date: d,
+                    depart: '', arrive: '', durationMin: 0, price: null, seatsLeft: 0, cls: '', url: fill(x.url, v), meta: {},
+                    link: true, generic: x.url.indexOf('{') < 0
+                });
+            });
+        });
+        return out;
+    }
+
+    /* برمی‌گرداند Promise<{offers, mode:'live'|'links'|'demo'}> */
+    function load(stem, city, from, date) {
         var api = g.TRAVEL_API_URL === undefined ? (/^https?:$/.test(location.protocol) ? '/api/offers' : '') : g.TRAVEL_API_URL;
+        function fallback(extra) {
+            var r = g.TRAVEL_DEMO ? { offers: demoOffers(stem, city, from), mode: 'demo', demo: true } : { offers: linkOffers(stem, city, from, date), mode: 'links', demo: false };
+            return Object.assign(r, extra || {});
+        }
         if (api) {
             var u = api + (api.indexOf('?') < 0 ? '?' : '&') + 'province=' + encodeURIComponent(stem) + '&to=' + encodeURIComponent(city) + '&from=' + encodeURIComponent(from || '');
             return fetch(u).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (j) {
-                return { offers: (j.offers || []).filter(function (o) { return TYPES[o.type] && PROVIDERS[o.provider]; }), demo: false };
-            }).catch(function () { return { offers: demoOffers(stem, city, from), demo: true, failed: true }; });
+                return { offers: (j.offers || []).filter(function (o) { return TYPES[o.type] && PROVIDERS[o.provider]; }), mode: 'live', demo: false };
+            }).catch(function () { return fallback({ failed: true }); });
         }
-        return Promise.resolve({ offers: demoOffers(stem, city, from), demo: true });
+        return Promise.resolve(fallback());
     }
 
-    g.TravelData = { CITIES: CITIES, TYPES: TYPES, PROVIDERS: PROVIDERS, load: load, days: days };
+    g.TravelData = { CITIES: CITIES, TYPES: TYPES, PROVIDERS: PROVIDERS, load: load, days: days, faDate: faDate };
 })(window);
