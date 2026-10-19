@@ -92,14 +92,21 @@
 
     /* ── حالت لینک: وقتی داده‌ی واقعی نیست، کاربر را با مبدا/مقصد/تاریخ به جست‌وجوی خود سایت می‌فرستیم ──
      * قالب‌ها را خودتان از آدرس جست‌وجوی هر سایت در مرورگر کپی و اینجا جای‌گذاری کنید. جاهای قابل‌استفاده:
-     *   {from} {to} نام شهر · {fromCode} {toCode} کد شهر از CITY_CODES (اگر نبود همان نام) ·
+     *   {from} {to} نام شهر · {fromCode} {toCode} کد شهر از CITY_CODES ·
      *   {date} تاریخ میلادی 2026-10-20 · {dateFa} تاریخ شمسی 1405-07-28
      * تا وقتی قالبی جای‌گذاری نشده، دکمه به صفحه‌ی اصلی همان سایت می‌رود (و روی کارت همین نوشته می‌شود).
      */
-    var CITY_CODES = {};   // مثلاً { 'تهران': 'THR', 'مشهد': 'MHD' } اگر قالب سایت کد می‌خواهد
+    /* کد فرودگاه/شهر برای آدرس پرواز علی‌بابا. شهری که اینجا نیست (کرج، قم، قزوین، سمنان: بدون پرواز تجاری) کارت پرواز نمی‌گیرد.
+     * کدها از دانش عمومی IATA است؛ هر کدام را یک بار در علی‌بابا امتحان کنید. */
+    var CITY_CODES = {
+        'تهران': 'THR', 'مشهد': 'MHD', 'اصفهان': 'IFN', 'شیراز': 'SYZ', 'تبریز': 'TBZ', 'اهواز': 'AWZ', 'کرمانشاه': 'KSH', 'ارومیه': 'OMH',
+        'رشت': 'RAS', 'زاهدان': 'ZAH', 'کرمان': 'KER', 'همدان': 'HDM', 'یزد': 'AZD', 'اردبیل': 'ADU', 'بندرعباس': 'BND', 'اراک': 'AJK',
+        'زنجان': 'JWN', 'سنندج': 'SDG', 'خرم‌آباد': 'KHD', 'گرگان': 'GBT', 'ساری': 'SRY', 'بجنورد': 'BJB', 'بیرجند': 'XBJ', 'ایلام': 'IIL',
+        'یاسوج': 'YES', 'شهرکرد': 'CQD', 'بوشهر': 'BUZ'
+    };
     var SEARCH = {
         train: [{ provider: 'raja', url: 'https://www.raja.ir/' }, { provider: 'alibaba', url: 'https://www.alibaba.ir/' }],
-        flight: [{ provider: 'alibaba', url: 'https://www.alibaba.ir/' }],
+        flight: [{ provider: 'alibaba', url: 'https://www.alibaba.ir/flights/{fromCode}-{toCode}?adult=1&child=0&infant=0&departing={dateFa}' }],
         bus: [{ provider: 'alibaba', url: 'https://www.alibaba.ir/' }],
         hotel: [{ provider: 'jabama', url: 'https://www.jabama.com/' }, { provider: 'alibaba', url: 'https://www.alibaba.ir/' }]
     };
@@ -115,11 +122,12 @@
     }
     function linkOffers(stem, city, from, date) {
         var out = [], d = date || days(2)[1], v = {
-            from: from, to: city, fromCode: CITY_CODES[from] || from, toCode: CITY_CODES[city] || city, date: d, dateFa: faDate(d)
+            from: from, to: city, fromCode: CITY_CODES[from] || '', toCode: CITY_CODES[city] || '', date: d, dateFa: faDate(d)
         };
         Object.keys(SEARCH).forEach(function (type) {
             if (type !== 'hotel' && (!from || from === city)) return;
             SEARCH[type].forEach(function (x) {
+                if (/Code\}/.test(x.url) && (!CITY_CODES[from] || !CITY_CODES[city])) return;
                 out.push({
                     id: 'link.' + type + '.' + x.provider + '.' + (type === 'hotel' ? '' : from + '.') + city + '.' + d,
                     type: type, provider: x.provider, company: TYPES[type].label, from: type === 'hotel' ? '' : from, to: city, date: d,
