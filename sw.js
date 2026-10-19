@@ -5,7 +5,7 @@
  *  - برای صفحه‌ها و کدها «اول کش، همزمان به‌روزرسانی» است.
  * هر وقت فایل‌های هسته را عوض کردید عدد VERSION را بالا ببرید.
  */
-const VERSION = 'v3';
+const VERSION = 'v4';
 const CORE = `core-${VERSION}`;
 const RUNTIME = `runtime-${VERSION}`;
 const IMG_LIMIT = 120;
@@ -85,6 +85,9 @@ self.addEventListener('fetch', (e) => {
   }
 
   if (url.origin !== location.origin) return;
+
+  // API بلیت: همیشه از شبکه (نباید کش شود)
+  if (url.pathname.startsWith('/api/')) return;
 
   // عکس‌ها
   if (/\.(?:jpe?g|png|webp|avif|gif|svg)$/i.test(url.pathname) && !url.pathname.endsWith('iran.svg')) {
