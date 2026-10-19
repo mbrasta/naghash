@@ -3,7 +3,8 @@
  *
  * ⚠ خواندن مستقیم قیمت و موجودی از علی‌بابا، جاباما و رجا داخل مرورگر ممکن نیست
  *   (API عمومی ندارند، CORS مسدود است و شرایط استفاده اجازه نمی‌دهد). پس دو حالت داریم:
- *   1) حالت زنده: آدرس سرویس خودتان (یا API همکاری‌درآمدی) را در window.TRAVEL_API_URL بگذارید.
+ *   1) حالت زنده: پیش‌فرض /api/offers (فایل api/offers.js روی Vercel) است؛ بدون منبع تنظیم‌شده 503 می‌دهد و نمونه نشان داده می‌شود.
+ *      آدرس دیگر را می‌توانید در window.TRAVEL_API_URL بگذارید.
  *      درخواست:  GET {URL}?province=tehran&to=تهران&from=مشهد   ←  پاسخ: { offers: [ ... ] } با قالب پایین.
  *   2) حالت نمونه (پیش‌فرض): داده‌ی ساختگی و قطعی برای نمایش ساختار؛ همه‌ی کارت‌ها «نمونه» برچسب می‌خورند
  *      و دکمه‌ی «مشاهده در سایت» به صفحه‌ی اصلی سرویس می‌رود، نه یک بلیت واقعی.
@@ -91,7 +92,7 @@
 
     /* برمی‌گرداند Promise<{offers, demo}> */
     function load(stem, city, from) {
-        var api = g.TRAVEL_API_URL;
+        var api = g.TRAVEL_API_URL === undefined ? (/^https?:$/.test(location.protocol) ? '/api/offers' : '') : g.TRAVEL_API_URL;
         if (api) {
             var u = api + (api.indexOf('?') < 0 ? '?' : '&') + 'province=' + encodeURIComponent(stem) + '&to=' + encodeURIComponent(city) + '&from=' + encodeURIComponent(from || '');
             return fetch(u).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (j) {
