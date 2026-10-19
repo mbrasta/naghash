@@ -114,7 +114,7 @@
             '<div class="info-card"><h3>🧭 نحوه‌ی رسیدن</h3><ul>' + access + '</ul></div>' +
             '<div class="info-card"><h3>☎ شماره‌های ضروری</h3><ul class="tel">' +
             '<li><a href="tel:110">۱۱۰</a> پلیس</li><li><a href="tel:115">۱۱۵</a> اورژانس</li><li><a href="tel:125">۱۲۵</a> آتش‌نشانی</li></ul></div>' +
-            '<div class="info-card"><h3>🎟 ساعت بازدید و بلیت</h3><p>---</p></div>' +
+            '<div class="info-card clickable" id="travel-card" role="button" tabindex="0" aria-haspopup="dialog"><h3>🎟 ساعت بازدید و بلیت</h3><p>قطار، پرواز، اتوبوس و اقامت</p><p class="card-hint">برای مشاهده کلیک کنید ←</p></div>' +
             '</div>' + ticketTable() +
             '<p class="updated">آخرین به‌روزرسانی داده‌های این بخش: ' + esc(window.PROVINCE_META_UPDATED || '') + '</p>';
         (season || facts || mapSec).parentNode.insertBefore(info, season ? season.nextSibling : facts);
@@ -143,7 +143,28 @@
             '<p class="svc-note">رزرو در این سایت انجام نمی‌شود؛ با کلیک به سایت سرویس‌دهنده می‌روید و قیمت و موجودی را همان‌جا ببینید.' +
             (anyAff ? ' از برخی لینک‌ها ممکن است کمیسیون دریافت کنیم.' : '') + '</p>';
         info.parentNode.insertBefore(svc, info.nextSibling);
+        setupTravel(info.querySelector('#travel-card'));
         return { mapSec: mapSec };
+    }
+
+    /* ───────── پنجره‌ی بلیت (بارگذاری تنبل) ───────── */
+    function loadScript(src) {
+        return new Promise(function (ok, bad) {
+            var s = el('script'); s.src = src; s.onload = ok; s.onerror = bad; document.head.appendChild(s);
+        });
+    }
+    function setupTravel(card) {
+        if (!card) return;
+        var busy = false;
+        function open() {
+            if (window.TravelModal) { window.TravelModal.open(stem); return; }
+            if (busy) return; busy = true;
+            loadScript('travel-data.js').then(function () { return loadScript('travel-modal.js'); })
+                .then(function () { busy = false; window.TravelModal.open(stem); })
+                .catch(function () { busy = false; toast('بارگذاری بلیت‌ها ممکن نشد (اینترنت لازم است).'); });
+        }
+        card.addEventListener('click', open);
+        card.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
     }
 
     // جدول ساعت و بلیت فقط وقتی داده‌ی تأییدشده در ATTRACTION_INFO باشد
