@@ -93,7 +93,7 @@
     /* ── حالت لینک: وقتی داده‌ی واقعی نیست، کاربر را با مبدا/مقصد/تاریخ به جست‌وجوی خود سایت می‌فرستیم ──
      * قالب‌ها را خودتان از آدرس جست‌وجوی هر سایت در مرورگر کپی و اینجا جای‌گذاری کنید. جاهای قابل‌استفاده:
      *   {from} {to} نام شهر · {fromCode} {toCode} کد شهر از CITY_CODES ·
-     *   {date} تاریخ میلادی 2026-10-20 · {dateFa} تاریخ شمسی 1405-07-28
+     *   {date} تاریخ میلادی 2026-10-20 · {dateFa} تاریخ شمسی 1405-07-28 · {dateRaja} شمسی فشرده 14050728 · {rajaFrom} {rajaTo} کد ایستگاه رجا · {desc} متن «قطار مبدا به مقصد»
      * تا وقتی قالبی جای‌گذاری نشده، دکمه به صفحه‌ی اصلی همان سایت می‌رود (و روی کارت همین نوشته می‌شود).
      */
     /* کد فرودگاه/شهر برای آدرس پرواز علی‌بابا. شهری که اینجا نیست (کرج، قم، قزوین، سمنان: بدون پرواز تجاری) کارت پرواز نمی‌گیرد.
@@ -105,8 +105,12 @@
         'زنجان': 'JWN', 'سنندج': 'SDG', 'خرم‌آباد': 'KHD', 'گرگان': 'GBT', 'ساری': 'SRY', 'بجنورد': 'BJB', 'بیرجند': 'XBJ', 'ایلام': 'IIL',
         'یاسوج': 'YES', 'شهرکرد': 'CQD', 'بوشهر': 'BUZ'
     };
+    /* کد ایستگاه رجا (پارامترهای fs و ts در آدرس جست‌وجوی raja.ir). فقط کدهای تأییدشده؛ شهر بدون کد → صفحه‌ی اصلی رجا.
+     * برای اضافه کردن شهر: در raja.ir همان مسیر را جست‌وجو کنید و عدد fs (مبدا) یا ts (مقصد) را از آدرس بردارید. */
+    var RAJA_CODES = { 'تهران': 1, 'مشهد': 191 };
     var SEARCH = {
-        train: [{ provider: 'raja', url: 'https://www.raja.ir/' },
+        train: [{ provider: 'raja', home: 'https://www.raja.ir/',
+            url: 'https://www.raja.ir/search?adult=1&child=0&infant=0&movetype=1&ischarter=false&fs={rajaFrom}&ts={rajaTo}&godate={dateRaja}&tickettype=Family&returndate=&numberpassenger=1&mode=Train&desctravel={desc}' },
             { provider: 'alibaba', url: 'https://www.alibaba.ir/train/{fromCode}-{toCode}?adult=1&child=0&infant=0&departing={dateFa}&ticketType=Family&isExclusive=false&isTransitCar=false', home: 'https://www.alibaba.ir/' }],
         flight: [{ provider: 'alibaba', url: 'https://www.alibaba.ir/flights/{fromCode}-{toCode}?adult=1&child=0&infant=0&departing={dateFa}', skipNoCode: true }],
         bus: [{ provider: 'alibaba', url: 'https://www.alibaba.ir/' }],
@@ -124,12 +128,13 @@
     }
     function linkOffers(stem, city, from, date) {
         var out = [], d = date || days(2)[1], v = {
-            from: from, to: city, fromCode: CITY_CODES[from] || '', toCode: CITY_CODES[city] || '', date: d, dateFa: faDate(d)
+            from: from, to: city, fromCode: CITY_CODES[from] || '', toCode: CITY_CODES[city] || '', rajaFrom: RAJA_CODES[from] || '', rajaTo: RAJA_CODES[city] || '',
+            date: d, dateFa: faDate(d), dateRaja: faDate(d).replace(/-/g, ''), desc: 'قطار ' + from + ' به ' + city
         };
         Object.keys(SEARCH).forEach(function (type) {
             if (type !== 'hotel' && (!from || from === city)) return;
             SEARCH[type].forEach(function (x) {
-                var noCode = /Code\}/.test(x.url) && (!CITY_CODES[from] || !CITY_CODES[city]);
+                var noCode = (x.url.match(/\{(\w+)\}/g) || []).some(function (m) { return !v[m.slice(1, -1)]; });
                 if (noCode && x.skipNoCode) return;            // پرواز: شهر بدون فرودگاه کارت ندارد
                 var tpl = noCode ? (x.home || x.url) : x.url;   // قطار: کد نبود → صفحه‌ی اصلی سایت
                 out.push({
