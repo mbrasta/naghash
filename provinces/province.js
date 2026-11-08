@@ -110,11 +110,11 @@
         info.innerHTML =
             '<h2>اطلاعات کاربردی</h2>' +
             '<div class="info-grid">' +
-            '<div class="info-card" id="wx"><h3>هوای اکنون در ' + esc(meta.city.name) + '</h3><p id="wx-body">در حال دریافت…</p></div>' +
-            '<div class="info-card"><h3>نحوه‌ی رسیدن</h3><ul>' + access + '</ul></div>' +
-            '<div class="info-card"><h3>شماره‌های ضروری</h3><ul class="tel">' +
+            '<div class="info-card" id="wx"><h3>🌤 هوای اکنون در ' + esc(meta.city.name) + '</h3><p id="wx-body">در حال دریافت…</p></div>' +
+            '<div class="info-card"><h3>🧭 نحوه‌ی رسیدن</h3><ul>' + access + '</ul></div>' +
+            '<div class="info-card"><h3>☎ شماره‌های ضروری</h3><ul class="tel">' +
             '<li><a href="tel:110">۱۱۰</a> پلیس</li><li><a href="tel:115">۱۱۵</a> اورژانس</li><li><a href="tel:125">۱۲۵</a> آتش‌نشانی</li></ul></div>' +
-            '<div class="info-card clickable" id="travel-card" role="button" tabindex="0" aria-haspopup="dialog"><h3>ساعت بازدید و بلیت</h3><p>قطار، پرواز، اتوبوس و اقامت</p><p class="card-hint">برای مشاهده کلیک کنید ←</p></div>' +
+            '<div class="info-card clickable" id="travel-card" role="button" tabindex="0" aria-haspopup="dialog"><h3>🎟 ساعت بازدید و بلیت</h3><p>قطار، پرواز، اتوبوس و اقامت</p><p class="card-hint">برای مشاهده کلیک کنید ←</p></div>' +
             '</div>' + ticketTable() +
             '<p class="updated">آخرین به‌روزرسانی داده‌های این بخش: ' + esc(window.PROVINCE_META_UPDATED || '') + '</p>';
         (season || facts || mapSec).parentNode.insertBefore(info, season ? season.nextSibling : facts);
@@ -178,8 +178,8 @@
     }
 
     /* ───────── هوا (Open-Meteo، رایگان و بدون کلید) ───────── */
-    var WX = [[0, '', 'آفتابی'], [2, '', 'نیمه‌ابری'], [3, '', 'ابری'], [48, '', 'مه'], [57, '', 'نم‌نم باران'],
-        [67, '', 'باران'], [77, '', 'برف'], [82, '', 'رگبار'], [86, '', 'بارش برف'], [99, '', 'رعد و برق']];
+    var WX = [[0, '☀️', 'آفتابی'], [2, '⛅', 'نیمه‌ابری'], [3, '☁️', 'ابری'], [48, '🌫', 'مه'], [57, '🌦', 'نم‌نم باران'],
+        [67, '🌧', 'باران'], [77, '🌨', 'برف'], [82, '🌧', 'رگبار'], [86, '🌨', 'بارش برف'], [99, '⛈', 'رعد و برق']];
     function wxDesc(c) { for (var i = 0; i < WX.length; i++) if (c <= WX[i][0]) return WX[i]; return WX[2]; }
     function loadWeather() {
         var body = document.getElementById('wx-body'); if (!body) return;
@@ -187,7 +187,7 @@
         try { cached = JSON.parse(localStorage.getItem(key)); } catch (e) {}
         function show(d, stale) {
             var w = wxDesc(d.code);
-            body.innerHTML = '<span class="wx-big">' + TC.faNum(Math.round(d.t)) + '°C</span> ' + w[2] +
+            body.innerHTML = '<span class="wx-big">' + w[1] + ' ' + TC.faNum(Math.round(d.t)) + '°C</span> ' + w[2] +
                 '<br><small>باد ' + TC.faNum(Math.round(d.wind)) + ' کیلومتر بر ساعت' + (stale ? ' · آخرین مقدار ثبت‌شده (آفلاین)' : '') + '</small>';
         }
         if (cached && Date.now() - cached.at < 3600e3) { show(cached); return; }
