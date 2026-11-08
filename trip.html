@@ -91,6 +91,13 @@
         .origin .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
         .origin select { padding: 8px 12px; border-radius: 10px; border: 1px solid #475569; background: var(--bg); color: #fff; font-family: inherit; font-size: .95rem; min-width: 180px; }
         .origin p { margin: 8px 0 0; font-size: .85rem; color: var(--muted); }
+        .origin .ok { margin-top: 12px; display: none; }
+        .origin [hidden] { display: none !important; }
+        #origin-backdrop { display: none; }
+        .origin.asking { position: fixed; z-index: 60; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(460px, 92vw); margin: 0; padding: 20px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+        .origin.asking h2 { font-size: 1.2rem; }
+        .origin.asking .ok { display: inline-block; }
+        .origin.asking ~ #origin-backdrop, #origin-backdrop.on { display: block; position: fixed; inset: 0; z-index: 55; background: rgba(0,0,0,.65); }
         .print-only { display: none; }
         .toast {
             position: fixed; bottom: 24px; left: 50%; transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
@@ -125,6 +132,7 @@
     </header>
 
     <main>
+        <div id="origin-backdrop"></div>
         <div id="shared" class="banner" hidden>
             <p>این برنامه از یک لینک اشتراکی باز شده است و هنوز در «سفر من» شما ذخیره نشده.</p>
             <div class="row">
@@ -140,6 +148,7 @@
                 <button type="button" id="origin-gps">موقعیت فعلی من</button>
             </div>
             <p id="origin-note"></p>
+            <button type="button" id="origin-ok" class="primary ok" disabled>تأیید مبدا و ادامه</button>
             <button type="button" id="origin-skip" class="skip" hidden>ادامه بدون مبدا (بدون فاصله از مبدا)</button>
         </section>
 
@@ -174,8 +183,10 @@
         var $ = function (id) { return document.getElementById(id); };
         var shared = TC.decodeShare(location.hash);          // حالت فقط‌خواندنی از لینک اشتراکی
         var FAR_KM = 150;
-        var ORG_KEY = 'iranTripOrigin.v1', origin = loadOrigin(), failShown = false, skipOrigin = false;
+        var ORG_KEY = 'iranTripOrigin.v1', origin = loadOrigin(), failShown = false, skipOrigin = false, asking = !askedThisSession();
 
+        function askedThisSession() { try { return sessionStorage.getItem('iranTripOriginAsked') === '1'; } catch (e) { return false; } }
+        function markAsked() { asking = false; try { sessionStorage.setItem('iranTripOriginAsked', '1'); } catch (e) {} }
         function loadOrigin() {
             try { var o = JSON.parse(localStorage.getItem(ORG_KEY)); if (o && isFinite(o.lat) && isFinite(o.lng) && o.name) return o; } catch (e) {}
             try {
@@ -202,6 +213,10 @@
                 ? 'مبدا: ' + origin.name + ' — فاصله‌ی هر مقصد از مبدا و چیدمان هوشمند از اینجا و روی مسیر جاده‌ای حساب می‌شود.'
                 : 'ابتدا مبدا خود را انتخاب کنید تا فاصله‌ی هر مقصد از مبدا و فاصله‌ی بین مقصدها روی مسیر جاده‌ای نقشه حساب شود.';
             $('origin-skip').hidden = !!origin;
+            $('origin-ok').disabled = !origin;
+            $('origin').classList.toggle('asking', asking);
+            $('origin-backdrop').classList.toggle('on', asking);
+            $('origin-h').textContent = asking ? 'مبدای سفر شما کجاست؟' : 'از کجا شروع می‌کنید؟';
         }
 
         function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -247,7 +262,7 @@
             $('clear').disabled = st.n === 0;
             $('days').disabled = $('days').disabled || st.n === 0;
 
-            var gated = st.n > 0 && !origin && !skipOrigin;     // اول مبدا را می‌پرسیم
+            var gated = (st.n > 0 && !origin && !skipOrigin) || asking;     // اول مبدا را می‌پرسیم
             $('controls').style.display = gated ? 'none' : '';
             $('empty').hidden = st.n > 0;
             plan.innerHTML = '';
@@ -255,7 +270,7 @@
             $('hint').textContent = '';
             $('print-link').textContent = '';
             if (!st.n) return;
-            if (gated) { $('hint').textContent = 'برای دیدن فاصله‌ها، اول مبدای سفر را در کادر بالا انتخاب کنید.'; return; }
+            if (gated) { $('hint').textContent = asking ? '' : 'برای دیدن فاصله‌ها، اول مبدای سفر را در کادر بالا انتخاب کنید.'; return; }
 
             // فاصله‌ی جاده‌ای را از نقشه می‌گیریم (همین‌جا شروع می‌شود تا وضعیت «در حال گرفتن» درست نمایش داده شود)
             var pts0 = (origin ? [origin] : []).concat(st.ids.map(TC.find));
@@ -378,7 +393,9 @@
                 saveOrigin(origin); renderOrigin(); render();
             }, function () { toast('دسترسی به موقعیت داده نشد؛ مبدا را از فهرست انتخاب کنید'); }, { timeout: 10000, maximumAge: 600000 });
         });
-        $('origin-skip').addEventListener('click', function () { skipOrigin = true; render(); });
+        $('origin-skip').addEventListener('click', function () { skipOrigin = true; markAsked(); renderOrigin(); render(); });
+        $('origin-ok').addEventListener('click', function () { markAsked(); renderOrigin(); render(); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && asking) { markAsked(); renderOrigin(); render(); } });
         $('clear').addEventListener('click', function () { if (confirm('کل برنامه‌ی سفر پاک شود؟')) S.clear(); });
         $('print').addEventListener('click', function () { window.print(); });
 
