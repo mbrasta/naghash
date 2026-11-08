@@ -30,7 +30,7 @@
         root.innerHTML =
             '<div class="tv-modal" role="dialog" aria-modal="true" aria-labelledby="tv-title">' +
             '<header class="tv-top"><h2 id="tv-title">استان ' + esc(m.name) + '</h2>' +
-            '<div class="tv-top-btns"><button type="button" class="tv-cart" aria-label="سبد انتخاب‌ها">🛒 <b class="tv-cart-n">۰</b></button>' +
+            '<div class="tv-top-btns"><button type="button" class="tv-cart" aria-label="سبد انتخاب‌ها">سبد <b class="tv-cart-n">۰</b></button>' +
             '<button type="button" class="tv-close" aria-label="بستن">✕</button></div></header>' +
             '<div class="tv-body"><aside class="tv-filters" aria-label="فیلترها"></aside><main class="tv-main"></main></div></div>';
         document.body.appendChild(root);
@@ -125,9 +125,9 @@
             '<fieldset class="tv-route"><legend>مبدا</legend><select class="tv-from" aria-label="مبدا">' +
             TD.CITIES.map(function (c) { return '<option' + (c === st.from ? ' selected' : '') + (c === destCity ? ' disabled' : '') + '>' + esc(c) + '</option>'; }).join('') +
             '</select><div class="tv-dest">مقصد: <b>' + esc(destCity) + '</b></div></fieldset>' +
-            '<div class="tv-search"><input type="search" class="tv-q" placeholder="جستجو" aria-label="جستجو" value="' + esc(st.q) + '"><span aria-hidden="true">🔍</span></div>' +
+            '<div class="tv-search"><input type="search" class="tv-q" placeholder="جستجو" aria-label="جستجو" value="' + esc(st.q) + '"></div>' +
             '<fieldset><legend>نوع</legend>' + Object.keys(TD.TYPES).map(function (k) {
-                return chk('types', k, TD.TYPES[k].icon + ' ' + TD.TYPES[k].label, st.types.indexOf(k) >= 0);
+                return chk('types', k, TD.TYPES[k].label, st.types.indexOf(k) >= 0);
             }).join('') + '</fieldset>' +
             '<fieldset><legend>تاریخ سفر</legend><div class="tv-cal"></div></fieldset>' +
             (mode === 'links' ? '' : '<fieldset><legend>حداکثر قیمت</legend><input type="range" class="tv-price" min="' + step + '" max="' + top + '" step="' + step + '" value="' + (st.maxPrice || top) + '" aria-label="حداکثر قیمت">' +
@@ -173,14 +173,14 @@
         var route = hotel ? esc(t.label) + ' در ' + esc(o.to) : esc(o.from) + ' ← ' + esc(o.to);
         var add = '<button type="button" class="tv-add' + (on ? ' on' : '') + '" data-id="' + esc(o.id) + '" aria-pressed="' + on + '">' + (on ? '✓ در سبد' : '＋ افزودن به سبد') + '</button>';
         if (o.link) {
-            return '<article class="tv-card link"><div class="tv-card-h"><span class="tv-type">' + t.icon + ' ' + t.label + '</span></div>' +
+            return '<article class="tv-card link"><div class="tv-card-h"><span class="tv-type">' + t.label + '</span></div>' +
                 '<h3>' + route + '</h3><ul><li>' + esc(hotel ? 'ورود: ' : 'تاریخ سفر: ') + esc(dayLabel(o.date)) + '</li>' +
                 '<li class="tv-src">سرویس‌دهنده: ' + esc(pv.name) + '</li><li>قیمت و موجودی: در سایت ' + esc(pv.name) + '</li>' +
                 (o.generic ? '<li class="tv-src">این دکمه به صفحه‌ی اصلی سایت می‌رود؛ مبدا و مقصد را همان‌جا وارد کنید.</li>' : '') + '</ul>' +
                 '<div class="tv-card-f"><a class="tv-go" href="' + esc(o.url) + '" target="_blank" rel="noopener">جست‌وجو در ' + esc(pv.name) + ' ↗</a>' + add + '</div></article>';
         }
         var times = hotel ? 'ورود ' + esc(o.depart) + ' · خروج ' + esc(o.arrive) : esc(o.depart) + ' تا ' + esc(o.arrive) + (o.durationMin ? ' · ' + dur(o.durationMin) : '');
-        return '<article class="tv-card' + (o.demo ? ' demo' : '') + '"><div class="tv-card-h"><span class="tv-type">' + t.icon + ' ' + t.label + '</span>' +
+        return '<article class="tv-card' + (o.demo ? ' demo' : '') + '"><div class="tv-card-h"><span class="tv-type">' + t.label + '</span>' +
             (o.demo ? '<span class="tv-demo">نمونه</span>' : '') + '</div>' +
             '<h3>' + (hotel ? esc(o.company) + ' · ' + esc(o.to) : route) + '</h3>' +
             '<ul><li>' + esc(hotel ? o.cls : o.company + ' · ' + o.cls) + '</li><li>' + esc(dayLabel(o.date)) + '</li><li>' + times + '</li>' +
@@ -207,7 +207,7 @@
         var main = root.querySelector('.tv-main'), total = 0;
         var rows = cart.map(function (o) {
             if (o.price != null) total += o.price; var pv = TD.PROVIDERS[o.provider] || { name: '' };
-            return '<li><div><b>' + TD.TYPES[o.type].icon + ' ' + (o.type === 'hotel' ? esc((o.link ? 'اقامت' : o.company) + ' · ' + o.to) : esc(o.from + ' ← ' + o.to)) + '</b>' +
+            return '<li><div><b>' + (o.type === 'hotel' ? esc((o.link ? 'اقامت' : o.company) + ' · ' + o.to) : esc(o.from + ' ← ' + o.to)) + '</b>' +
                 '<small>' + esc(dayLabel(o.date)) + (o.depart ? ' · ' + esc(o.depart) : '') + ' · ' + esc(pv.name) + (o.demo ? ' · نمونه' : '') + '</small></div>' +
                 '<span>' + money(o.price) + '</span><a class="tv-open" href="' + esc(o.url) + '" target="_blank" rel="noopener">' + (o.link ? 'جست‌وجو در سایت' : 'مشاهده در سایت') + '</a>' +
                 '<button type="button" class="tv-rm" data-id="' + esc(o.id) + '" aria-label="حذف">✕</button></li>';
@@ -225,7 +225,7 @@
     function renderMain() {
         var main = root.querySelector('.tv-main');
         if (st.view === 'cart') { renderCart(); return; }
-        main.innerHTML = (isDemo ? '<p class="tv-banner" role="note">⚠ این فهرست نمونه (آزمایشی) است و قیمت و موجودی واقعی نیست.</p>' :
+        main.innerHTML = (isDemo ? '<p class="tv-banner" role="note">این فهرست نمونه (آزمایشی) است و قیمت و موجودی واقعی نیست.</p>' :
             mode === 'links' ? '<p class="tv-banner" role="note">قیمت و موجودی در این سایت نمایش داده نمی‌شود. با «جست‌وجو در …» به سایت سرویس‌دهنده می‌روید و همان‌جا بلیت و قیمت واقعی را می‌بینید؛ رزرو هم آنجا انجام می‌شود.</p>' : '') +
             '<div class="tv-bar"><span class="tv-count"></span></div><div class="tv-grid"></div>';
         renderList();

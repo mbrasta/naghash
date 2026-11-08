@@ -29,7 +29,7 @@
 
     /* ───────── سفر من: دکمه‌ی شناور + کارت‌ها ───────── */
     function setupTrip() {
-        var fab = el('a', 'trip-fab', '<span aria-hidden="true">🧳</span> سفر من <b class="trip-count">۰</b>');
+        var fab = el('a', 'trip-fab', 'سفر من <b class="trip-count">۰</b>');
         fab.href = '../trip.html'; fab.setAttribute('aria-label', 'برنامه‌ی سفر من');
         document.body.appendChild(fab);
 
@@ -60,13 +60,13 @@
             var d = TC.distKm(meta.city, a);
             var box = el('div', 'card-actions');
             var chip = el('span', 'card-dist');
-            chip.textContent = '📍 ' + TC.fmtKm(d) + ' تا ' + meta.city.name + (a.approx ? ' · تقریبی' : '');
+            chip.textContent = TC.fmtKm(d) + ' تا ' + meta.city.name + (a.approx ? ' · تقریبی' : '');
             chip.title = 'فاصله‌ی خط مستقیم از مرکز شهر؛ مسیر جاده‌ای بیشتر است';
 
             var row = el('div', 'card-btns');
             var add = el('button', 'card-trip'); add.type = 'button'; add.setAttribute('data-trip-id', a.id);
             add.addEventListener('click', function () { toggle(a.id); });
-            var go = el('a', 'card-route', '🧭 مسیریابی');
+            var go = el('a', 'card-route', 'مسیریابی');
             go.href = TC.dirUrl(a); go.target = '_blank'; go.rel = 'noopener';
             go.setAttribute('aria-label', 'مسیریابی به ' + h.textContent);
             row.append(add, go);
@@ -110,11 +110,11 @@
         info.innerHTML =
             '<h2>اطلاعات کاربردی</h2>' +
             '<div class="info-grid">' +
-            '<div class="info-card" id="wx"><h3>🌤 هوای اکنون در ' + esc(meta.city.name) + '</h3><p id="wx-body">در حال دریافت…</p></div>' +
-            '<div class="info-card"><h3>🧭 نحوه‌ی رسیدن</h3><ul>' + access + '</ul></div>' +
-            '<div class="info-card"><h3>☎ شماره‌های ضروری</h3><ul class="tel">' +
+            '<div class="info-card" id="wx"><h3>هوای اکنون در ' + esc(meta.city.name) + '</h3><p id="wx-body">در حال دریافت…</p></div>' +
+            '<div class="info-card"><h3>نحوه‌ی رسیدن</h3><ul>' + access + '</ul></div>' +
+            '<div class="info-card"><h3>شماره‌های ضروری</h3><ul class="tel">' +
             '<li><a href="tel:110">۱۱۰</a> پلیس</li><li><a href="tel:115">۱۱۵</a> اورژانس</li><li><a href="tel:125">۱۲۵</a> آتش‌نشانی</li></ul></div>' +
-            '<div class="info-card clickable" id="travel-card" role="button" tabindex="0" aria-haspopup="dialog"><h3>🎟 ساعت بازدید و بلیت</h3><p>قطار، پرواز، اتوبوس و اقامت</p><p class="card-hint">برای مشاهده کلیک کنید ←</p></div>' +
+            '<div class="info-card clickable" id="travel-card" role="button" tabindex="0" aria-haspopup="dialog"><h3>ساعت بازدید و بلیت</h3><p>قطار، پرواز، اتوبوس و اقامت</p><p class="card-hint">برای مشاهده کلیک کنید ←</p></div>' +
             '</div>' + ticketTable() +
             '<p class="updated">آخرین به‌روزرسانی داده‌های این بخش: ' + esc(window.PROVINCE_META_UPDATED || '') + '</p>';
         (season || facts || mapSec).parentNode.insertBefore(info, season ? season.nextSibling : facts);
@@ -132,13 +132,13 @@
         svc.innerHTML =
             '<h2>اقامت، حمل‌ونقل و تور</h2>' +
             '<div class="svc-grid">' +
-            '<div class="svc"><h3>🏨 اقامت در ' + esc(meta.city.name) + '</h3><div class="svc-links">' + links(S.hotel) +
+            '<div class="svc"><h3>اقامت در ' + esc(meta.city.name) + '</h3><div class="svc-links">' + links(S.hotel) +
             '<a class="svc-link alt" href="' + TC.searchUrl('هتل در ' + meta.city.name) + '" target="_blank" rel="noopener">هتل‌ها روی نقشه</a></div></div>' +
-            '<div class="svc"><h3>🚆 قطار</h3><div class="svc-links">' + links(S.train) +
+            '<div class="svc"><h3>قطار</h3><div class="svc-links">' + links(S.train) +
             '<a class="svc-link alt" href="' + TC.searchUrl('ایستگاه راه‌آهن ' + meta.city.name) + '" target="_blank" rel="noopener">ایستگاه روی نقشه</a></div></div>' +
-            '<div class="svc"><h3>✈️ پرواز</h3><div class="svc-links">' + links(S.flight) +
+            '<div class="svc"><h3>پرواز</h3><div class="svc-links">' + links(S.flight) +
             '<a class="svc-link alt" href="' + TC.searchUrl('فرودگاه ' + meta.city.name) + '" target="_blank" rel="noopener">فرودگاه روی نقشه</a></div></div>' +
-            '<div class="svc"><h3>🧭 تور و راهنما</h3><div class="svc-links">' + links(S.tour) + '</div></div>' +
+            '<div class="svc"><h3>تور و راهنما</h3><div class="svc-links">' + links(S.tour) + '</div></div>' +
             '</div>' +
             '<p class="svc-note">رزرو در این سایت انجام نمی‌شود؛ با کلیک به سایت سرویس‌دهنده می‌روید و قیمت و موجودی را همان‌جا ببینید.' +
             (anyAff ? ' از برخی لینک‌ها ممکن است کمیسیون دریافت کنیم.' : '') + '</p>';
@@ -178,8 +178,8 @@
     }
 
     /* ───────── هوا (Open-Meteo، رایگان و بدون کلید) ───────── */
-    var WX = [[0, '☀️', 'آفتابی'], [2, '⛅', 'نیمه‌ابری'], [3, '☁️', 'ابری'], [48, '🌫', 'مه'], [57, '🌦', 'نم‌نم باران'],
-        [67, '🌧', 'باران'], [77, '🌨', 'برف'], [82, '🌧', 'رگبار'], [86, '🌨', 'بارش برف'], [99, '⛈', 'رعد و برق']];
+    var WX = [[0, '', 'آفتابی'], [2, '', 'نیمه‌ابری'], [3, '', 'ابری'], [48, '', 'مه'], [57, '', 'نم‌نم باران'],
+        [67, '', 'باران'], [77, '', 'برف'], [82, '', 'رگبار'], [86, '', 'بارش برف'], [99, '', 'رعد و برق']];
     function wxDesc(c) { for (var i = 0; i < WX.length; i++) if (c <= WX[i][0]) return WX[i]; return WX[2]; }
     function loadWeather() {
         var body = document.getElementById('wx-body'); if (!body) return;
@@ -187,7 +187,7 @@
         try { cached = JSON.parse(localStorage.getItem(key)); } catch (e) {}
         function show(d, stale) {
             var w = wxDesc(d.code);
-            body.innerHTML = '<span class="wx-big">' + w[1] + ' ' + TC.faNum(Math.round(d.t)) + '°C</span> ' + w[2] +
+            body.innerHTML = '<span class="wx-big">' + TC.faNum(Math.round(d.t)) + '°C</span> ' + w[2] +
                 '<br><small>باد ' + TC.faNum(Math.round(d.wind)) + ' کیلومتر بر ساعت' + (stale ? ' · آخرین مقدار ثبت‌شده (آفلاین)' : '') + '</small>';
         }
         if (cached && Date.now() - cached.at < 3600e3) { show(cached); return; }
@@ -233,7 +233,7 @@
                 wrap.innerHTML = '<b>' + esc(p.name) + '</b><br><small>' + TC.fmtKm(TC.distKm(meta.city, p)) + ' تا ' + esc(meta.city.name) + (p.approx ? ' · تقریبی' : '') + '</small>';
                 var add = el('button', 'card-trip'); add.type = 'button'; add.setAttribute('data-trip-id', p.id);
                 add.addEventListener('click', function () { api.toggle(p.id); });
-                var go = el('a', 'card-route', '🧭 مسیریابی'); go.href = TC.dirUrl(p); go.target = '_blank'; go.rel = 'noopener';
+                var go = el('a', 'card-route', 'مسیریابی'); go.href = TC.dirUrl(p); go.target = '_blank'; go.rel = 'noopener';
                 var r = el('div', 'card-btns'); r.append(add, go); wrap.appendChild(r);
                 m.bindPopup(wrap).openPopup();
                 window.dispatchEvent(new CustomEvent('tripchange'));   // وضعیت دکمه‌ی پاپ‌آپ

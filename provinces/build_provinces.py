@@ -166,7 +166,7 @@ def cards(items):
     out=[]
     for ico,t,d,b in items:
         badge=f'<span class="badge">{b}</span>' if b else ''
-        out.append(f'<div class="card">{badge}<span class="ico" aria-hidden="true">{ico}</span><h3>{t}</h3><p>{d}</p></div>')
+        out.append(f'<div class="card">{badge}<h3>{t}</h3><p>{d}</p></div>')
     return "\n                ".join(out)
 
 def season_html(seasons):
@@ -230,7 +230,7 @@ def main():
         html=re.sub(r'<h4>([^<]+)</h4>',lambda x:f'<h4><span class="ico" aria-hidden="true">{ICONS.get(x.group(1).strip(),"")}</span>{x.group(1)}</h4>' if x.group(1).strip() in ICONS else x.group(0),html)
 
         # هیرو: برچسب‌ها + نشانگر اسکرول، و ناوبری سریع بعد از آن
-        tags="".join(f"<span>{t}</span>" for t in TAGS[stem])
+        tags="".join("<span>"+re.sub("[\U0001F000-\U0001FAFF\u2600-\u27BF\uFE0F\u200d]+\\s*","",t)+"</span>" for t in TAGS[stem])
         html=re.sub(r'(</p>\s*)(</header>)',rf'\1<div class="hero-tags">{tags}</div>\n        <div class="scroll-hint" aria-hidden="true"></div>\n    \2\n\n    <nav class="quick-nav" aria-label="بخش‌های صفحه"></nav>',html,count=1)
 
         # بخش‌های تازه قبل از پایان container

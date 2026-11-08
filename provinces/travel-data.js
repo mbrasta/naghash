@@ -17,10 +17,10 @@
  */
 (function (g) {
     var TYPES = {
-        train: { label: 'قطار', icon: '🚆' },
-        flight: { label: 'هواپیما', icon: '✈️' },
-        bus: { label: 'اتوبوس', icon: '🚌' },
-        hotel: { label: 'اقامت', icon: '🏨' }
+        train: { label: 'قطار', icon: '' },
+        flight: { label: 'هواپیما', icon: '' },
+        bus: { label: 'اتوبوس', icon: '' },
+        hotel: { label: 'اقامت', icon: '' }
     };
     var PROVIDERS = {
         alibaba: { name: 'علی‌بابا', url: 'https://www.alibaba.ir/' },
