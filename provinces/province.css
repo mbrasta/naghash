@@ -369,10 +369,9 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outlin
 /* می‌دانستید */
 .facts { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
 .facts li {
-    position: relative; padding: 14px 52px 14px 16px; border-radius: 12px;
+    position: relative; padding: 14px 16px; border-radius: 12px;
     background: var(--stat-bg); border: 1px solid var(--stat-border);
 }
-.facts li::before { content: "💡"; position: absolute; right: 14px; top: 12px; font-size: 1.4rem; }
 
 /* گالری با بزرگ‌نمایی */
 .gallery-item { cursor: zoom-in; }
