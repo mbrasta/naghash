@@ -60,6 +60,56 @@
         return true;
     }
 
+    /* ───────── تقویم شمسی کوچک ───────── */
+    var CAL_RANGE_DAYS = 120;
+    function isoOf(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+    function addDays(d, n) { var x = new Date(d.getTime()); x.setDate(x.getDate() + n); return x; }
+    function jp(d) {
+        var o = {}; new Intl.DateTimeFormat('en-u-ca-persian-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric' })
+            .formatToParts(d).forEach(function (p) { o[p.type] = +p.value; });
+        return o;
+    }
+    function today() { var t = new Date(); t.setHours(12, 0, 0, 0); return t; }
+    function monthDates(offset) {                 // همه‌ی روزهای ماه شمسی «offset» ماه بعد از ماه جاری
+        var first = addDays(today(), -(jp(today()).day - 1));
+        for (var i = 0; i < offset; i++) { var m = jp(first).month, k = 0; while (jp(first).month === m && k++ < 40) first = addDays(first, 1); }
+        var m0 = jp(first).month, out = [], d = first;
+        while (jp(d).month === m0 && out.length < 32) { out.push(d); d = addDays(d, 1); }
+        return out;
+    }
+    function renderCal(box) {
+        var t = today(), minIso = isoOf(t), maxIso = isoOf(addDays(t, CAL_RANGE_DAYS)), off = st.calOff || 0;
+        var days = monthDates(off), head = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { month: 'long', year: 'numeric' }).format(days[0]);
+        var lead = (days[0].getDay() + 1) % 7;    // هفته از شنبه شروع می‌شود
+        var cells = '';
+        for (var i = 0; i < lead; i++) cells += '<span></span>';
+        days.forEach(function (d) {
+            var iso = isoOf(d), dis = iso < minIso || iso > maxIso, sel = iso === st.date;
+            cells += '<button type="button" class="tv-day' + (sel ? ' sel' : '') + (iso === minIso ? ' today' : '') + '" data-d="' + iso + '"' + (dis ? ' disabled' : '') +
+                ' aria-pressed="' + sel + '" aria-label="' + esc(dayLabel(iso)) + '">' + fa(jp(d).day) + '</button>';
+        });
+        var lastIso = isoOf(days[days.length - 1]);
+        box.innerHTML = '<div class="tv-cal-h"><button type="button" class="tv-nav" data-nav="1" aria-label="ماه بعد"' + (lastIso >= maxIso ? ' disabled' : '') + '>›</button>' +
+            '<b>' + esc(head) + '</b><button type="button" class="tv-nav" data-nav="-1" aria-label="ماه قبل"' + (off <= 0 ? ' disabled' : '') + '>‹</button></div>' +
+            '<div class="tv-cal-w" aria-hidden="true">' + ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'].map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div>' +
+            '<div class="tv-cal-g">' + cells + '</div>' +
+            '<div class="tv-cal-f">' + (st.date ? esc(dayLabel(st.date)) : 'همه‌ی روزها') + (st.date && mode !== 'links' ? ' <button type="button" class="tv-cal-clear">پاک کردن</button>' : '') + '</div>';
+        box.querySelectorAll('.tv-nav').forEach(function (b) {
+            b.addEventListener('click', function () { st.calOff = off + (+b.getAttribute('data-nav')); renderCal(box); });
+        });
+        box.querySelectorAll('.tv-day').forEach(function (b) {
+            b.addEventListener('click', function () {
+                var d = b.getAttribute('data-d');
+                if (st.date === d && mode !== 'links') st.date = ''; else st.date = d;
+                renderCal(box);
+                var again = box.querySelector('.tv-day.sel'); if (again) again.focus();
+                if (mode === 'links') fetchOffers(); else renderList();
+            });
+        });
+        var c = box.querySelector('.tv-cal-clear');
+        if (c) c.addEventListener('click', function () { st.date = ''; renderCal(box); renderList(); });
+    }
+
     function renderFilters() {
         var box = root.querySelector('.tv-filters');
         var maxP = Math.max.apply(null, offers.map(function (o) { return o.price; }).concat([1000000]));
@@ -79,8 +129,7 @@
             '<fieldset><legend>نوع</legend>' + Object.keys(TD.TYPES).map(function (k) {
                 return chk('types', k, TD.TYPES[k].icon + ' ' + TD.TYPES[k].label, st.types.indexOf(k) >= 0);
             }).join('') + '</fieldset>' +
-            '<fieldset><legend>تاریخ سفر</legend><select class="tv-date" aria-label="تاریخ"><option value="">' + (mode === 'links' ? 'فردا' : 'همه‌ی روزها') + '</option>' +
-            TD.days(10).map(function (d) { return '<option value="' + d + '"' + (st.date === d ? ' selected' : '') + '>' + esc(dayLabel(d)) + '</option>'; }).join('') + '</select></fieldset>' +
+            '<fieldset><legend>تاریخ سفر</legend><div class="tv-cal"></div></fieldset>' +
             (mode === 'links' ? '' : '<fieldset><legend>حداکثر قیمت</legend><input type="range" class="tv-price" min="' + step + '" max="' + top + '" step="' + step + '" value="' + (st.maxPrice || top) + '" aria-label="حداکثر قیمت">' +
             '<output class="tv-price-out">' + (st.maxPrice ? money(st.maxPrice) : 'بدون محدودیت') + '</output></fieldset>' +
             '<fieldset><legend>شرکت</legend>' + companies.map(function (c) { return chk('company', c, esc(c), st.company.indexOf(c) >= 0); }).join('') + '</fieldset>') +
@@ -107,7 +156,7 @@
                 renderFilters(); renderMain();
             });
         });
-        box.querySelector('.tv-date').addEventListener('change', function (e) { st.date = e.target.value; if (mode === 'links') fetchOffers(); else renderList(); });
+        renderCal(box.querySelector('.tv-cal'));
         var pr = box.querySelector('.tv-price'), po = box.querySelector('.tv-price-out');
         if (pr) pr.addEventListener('input', function () {
             st.maxPrice = +pr.value >= +pr.max ? 0 : +pr.value;
@@ -199,7 +248,9 @@
         root.querySelector('.tv-main').innerHTML = '<p class="tv-empty">در حال بارگذاری…</p>';
         TD.load(stemNow, destCity, st.from, st.date).then(function (r) {
             if (token !== st.token) return;
-            offers = r.offers; isDemo = r.demo; mode = r.mode; render();
+            offers = r.offers; isDemo = r.demo; mode = r.mode;
+            if (mode === 'links' && !st.date) st.date = TD.days(2)[1];
+            render();
         });
     }
     function open(stem) {
