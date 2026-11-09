@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>برنامه‌ی سفر من</title>
+    <title>برنامه‌ی سفر من | نقشه هوشمند ایران</title>
     <meta name="theme-color" content="#0f172a">
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icons/icon-192.png">
@@ -85,6 +85,19 @@
         .tools button { padding: 4px 10px; font-size: .85rem; border-radius: 8px; }
         .tools a { padding: 4px 10px; font-size: .85rem; border-radius: 8px; }
 
+        .origin { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px 18px; margin-bottom: 18px; }
+        .origin.need { border-color: var(--warn); background: rgba(251,191,36,.08); }
+        .origin h2 { margin: 0 0 8px; font-size: 1.05rem; color: var(--blue-soft); }
+        .origin .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+        .origin select { padding: 8px 12px; border-radius: 10px; border: 1px solid #475569; background: var(--bg); color: #fff; font-family: inherit; font-size: .95rem; min-width: 180px; }
+        .origin p { margin: 8px 0 0; font-size: .85rem; color: var(--muted); }
+        .origin .ok { margin-top: 12px; display: none; }
+        .origin [hidden] { display: none !important; }
+        #origin-backdrop { display: none; }
+        .origin.asking { position: fixed; z-index: 60; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(460px, 92vw); margin: 0; padding: 20px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+        .origin.asking h2 { font-size: 1.2rem; }
+        .origin.asking .ok { display: inline-block; }
+        .origin.asking ~ #origin-backdrop, #origin-backdrop.on { display: block; position: fixed; inset: 0; z-index: 55; background: rgba(0,0,0,.65); }
         .print-only { display: none; }
         .toast {
             position: fixed; bottom: 24px; left: 50%; transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
@@ -92,6 +105,8 @@
         }
         .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+        .skip { margin-top: 8px; background: none; border: 0; color: inherit; opacity: .75; text-decoration: underline; cursor: pointer; font: inherit; }
+        .hint button { font: inherit; margin-right: 6px; }
         @media (max-width: 600px) {
             .stop { flex-wrap: wrap; }
             .tools { width: 100%; justify-content: flex-end; }
@@ -99,7 +114,7 @@
         }
         @media print {
             body { background: #fff; color: #000; }
-            .top, .controls, .tools, .banner, .toast, .day-route, .hint { display: none !important; }
+            .top, .controls, .tools, .banner, .toast, .day-route, .hint, .origin { display: none !important; }
             main { padding: 0; max-width: none; }
             .day, .chip, .empty { background: #fff; border-color: #bbb; color: #000; break-inside: avoid; }
             .day-head h2, .chip b { color: #000; }
@@ -113,10 +128,12 @@
 <body>
     <header class="top">
         <a class="back" href="index.html">← نقشه</a>
-        <h1>برنامه‌ی سفر من</h1>
+        <h1>🧳 برنامه‌ی سفر من</h1>
+        <span data-nh-mount style="margin-inline-start:auto"></span>
     </header>
 
     <main>
+        <div id="origin-backdrop"></div>
         <div id="shared" class="banner" hidden>
             <p>این برنامه از یک لینک اشتراکی باز شده است و هنوز در «سفر من» شما ذخیره نشده.</p>
             <div class="row">
@@ -125,9 +142,20 @@
             </div>
         </div>
 
+        <section class="origin" id="origin" aria-labelledby="origin-h">
+            <h2 id="origin-h">از کجا شروع می‌کنید؟</h2>
+            <div class="row">
+                <select id="origin-city" aria-label="شهر مبدا"></select>
+                <button type="button" id="origin-gps">موقعیت فعلی من</button>
+            </div>
+            <p id="origin-note"></p>
+            <button type="button" id="origin-ok" class="primary ok" disabled>تأیید مبدا و ادامه</button>
+            <button type="button" id="origin-skip" class="skip" hidden>ادامه بدون مبدا (بدون فاصله از مبدا)</button>
+        </section>
+
         <div class="controls" id="controls">
             <label>تعداد روز <input id="days" type="number" min="1" max="30" inputmode="numeric" aria-label="تعداد روز سفر"></label>
-            <button id="smart" type="button">چیدمان هوشمند</button>
+            <button id="smart" type="button" title="از مبدای شما شروع می‌کند و مقصدها را طوری می‌چیند که مسیر جاده‌ای کوتاه‌تر شود">چیدمان هوشمند</button>
             <button id="print" type="button">چاپ / PDF</button>
             <button id="share" class="primary" type="button">اشتراک‌گذاری</button>
             <button id="copy" type="button">کپی لینک</button>
@@ -148,6 +176,7 @@
     </main>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+    <script src="auth.js" defer></script>
     <script src="provinces/province-meta.js"></script>
     <script src="provinces/trip-core.js"></script>
     <script>
@@ -156,6 +185,42 @@
         var $ = function (id) { return document.getElementById(id); };
         var shared = TC.decodeShare(location.hash);          // حالت فقط‌خواندنی از لینک اشتراکی
         var FAR_KM = 150;
+        var ORG_KEY = 'iranTripOrigin.v1', origin = loadOrigin(), failShown = false, skipOrigin = false, asking = !askedThisSession();
+
+        function askedThisSession() { try { return sessionStorage.getItem('iranTripOriginAsked') === '1'; } catch (e) { return false; } }
+        function markAsked() { asking = false; try { sessionStorage.setItem('iranTripOriginAsked', '1'); } catch (e) {} }
+        function loadOrigin() {
+            try { var o = JSON.parse(localStorage.getItem(ORG_KEY)); if (o && isFinite(o.lat) && isFinite(o.lng) && o.name) return o; } catch (e) {}
+            try {
+                var n = localStorage.getItem('iranOrigin.v1');
+                var c = TC.ORIGINS.filter(function (x) { return x.name === n; })[0]; if (c) return c;
+            } catch (e) {}
+            return null;
+        }
+        function saveOrigin(o) {
+            try { localStorage.setItem(ORG_KEY, JSON.stringify(o)); if (!o.gps) localStorage.setItem('iranOrigin.v1', o.name); } catch (e) {}
+            if (window.NaghashAuth) window.NaghashAuth.touch();
+        }
+        function fmtDur(m) {
+            if (m == null) return '';
+            var h = Math.floor(m / 60), r = m % 60;
+            return (h ? TC.faNum(h) + ' ساعت' : '') + (h && r ? ' و ' : '') + (r || !h ? TC.faNum(r) + ' دقیقه' : '');
+        }
+        function renderOrigin() {
+            var sel = $('origin-city');
+            sel.innerHTML = '<option value="">مبدا را انتخاب کنید</option>' +
+                (origin && origin.gps ? '<option value="__gps" selected>موقعیت فعلی من</option>' : '') +
+                TC.ORIGINS.map(function (c) { return '<option value="' + esc(c.name) + '"' + (origin && !origin.gps && origin.name === c.name ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('');
+            $('origin').classList.toggle('need', !origin);
+            $('origin-note').textContent = origin
+                ? 'مبدا: ' + origin.name + ' — فاصله‌ی هر مقصد از مبدا و چیدمان هوشمند از اینجا و روی مسیر جاده‌ای حساب می‌شود.'
+                : 'ابتدا مبدا خود را انتخاب کنید تا فاصله‌ی هر مقصد از مبدا و فاصله‌ی بین مقصدها روی مسیر جاده‌ای نقشه حساب شود.';
+            $('origin-skip').hidden = !!origin;
+            $('origin-ok').disabled = !origin;
+            $('origin').classList.toggle('asking', asking);
+            $('origin-backdrop').classList.toggle('on', asking);
+            $('origin-h').textContent = asking ? 'مبدای سفر شما کجاست؟' : 'از کجا شروع می‌کنید؟';
+        }
 
         function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
         var tt;
@@ -200,15 +265,21 @@
             $('clear').disabled = st.n === 0;
             $('days').disabled = $('days').disabled || st.n === 0;
 
+            var gated = (st.n > 0 && !origin && !skipOrigin) || asking;     // اول مبدا را می‌پرسیم
+            $('controls').style.display = gated ? 'none' : '';
             $('empty').hidden = st.n > 0;
             plan.innerHTML = '';
             $('summary').innerHTML = '';
             $('hint').textContent = '';
             $('print-link').textContent = '';
             if (!st.n) return;
+            if (gated) { $('hint').textContent = asking ? '' : 'برای دیدن فاصله‌ها، اول مبدای سفر را در کادر بالا انتخاب کنید.'; return; }
 
-            var parts = split(st.ids, st.days), total = 0, provs = {};
-            var gi = 0, prev = null;
+            // فاصله‌ی جاده‌ای را از نقشه می‌گیریم (همین‌جا شروع می‌شود تا وضعیت «در حال گرفتن» درست نمایش داده شود)
+            var pts0 = (origin ? [origin] : []).concat(st.ids.map(TC.find));
+            var pf = TC.Road.missing(pts0) ? TC.Road.prefetch(pts0) : null;
+            var parts = split(st.ids, st.days), total = 0, totalMin = 0, allRoad = true, provs = {};
+            var gi = 0, prev = origin;
 
             parts.forEach(function (day, di) {
                 var dayKm = 0, prevInDay = null;
@@ -217,16 +288,22 @@
 
                 day.forEach(function (id) {
                     var a = TC.find(id); provs[a.prov] = 1;
-                    var gap = prev ? TC.distKm(prev, a) : null;
-                    if (prevInDay) dayKm += TC.distKm(prevInDay, a);
-                    if (gap != null) total += gap;
+                    var leg = prev ? TC.Road.get(prev, a) : null;
+                    var fromOrigin = prev === origin && !!origin;
+                    var org = origin ? TC.Road.get(origin, a) : null;
+                    if (prevInDay && leg && leg.road) dayKm += leg.km;
+                    if (leg) { if (leg.road) { total += leg.km; if (leg.min != null) totalMin += leg.min; } else allRoad = false; }
                     var idx = gi++;
+                    function roadText(r) { return TC.fmtKm(r.km) + (r.min != null ? ' · ' + fmtDur(r.min) : ''); }
+                    var lines = '';
+                    if (org) lines += '<div class="gap' + (org.road && org.km > FAR_KM ? ' far' : '') + '">' +
+                        (org.road ? 'از مبدا (' + esc(origin.name) + '): ' + roadText(org) : 'فاصله‌ی جاده‌ای از مبدا در دسترس نیست') + '</div>';
+                    if (leg && !fromOrigin) lines += '<div class="gap' + (leg.road && leg.km > FAR_KM ? ' far' : '') + '">' +
+                        (leg.road ? '↳ ' + roadText(leg) + ' از مقصد قبلی' + (leg.km > FAR_KM ? ' (احتمالاً نیاز به زمان سفر جداگانه)' : '') : '↳ فاصله‌ی جاده‌ای از مقصد قبلی در دسترس نیست') + '</div>';
                     var li = document.createElement('li'); li.className = 'stop';
                     li.innerHTML =
                         '<span class="num">' + TC.faNum(idx + 1) + '</span>' +
-                        '<div class="info"><b>' + esc(a.name) + '</b><small>' + esc(a.provName) + (a.approx ? ' · موقعیت تقریبی' : '') + '</small>' +
-                        (gap != null ? '<div class="gap' + (gap > FAR_KM ? ' far' : '') + '">' + (gap > FAR_KM ? '⚠ ' : '↳ ') + TC.fmtKm(gap) + ' از مقصد قبلی' +
-                            (gap > FAR_KM ? ' (خط مستقیم؛ احتمالاً نیاز به زمان سفر جداگانه)' : '') + '</div>' : '') + '</div>';
+                        '<div class="info"><b>' + esc(a.name) + '</b><small>' + esc(a.provName) + (a.approx ? ' · موقعیت تقریبی' : '') + '</small>' + lines + '</div>';
                     var tools = document.createElement('div'); tools.className = 'tools';
                     if (!shared) {
                         tools.innerHTML =
@@ -242,11 +319,13 @@
 
                 var head = document.createElement('div'); head.className = 'day-head';
                 head.innerHTML = '<h2>روز ' + TC.faNum(di + 1) + '</h2><small>' + TC.faNum(day.length) + ' مکان' +
-                    (day.length > 1 ? ' · ≈ ' + TC.fmtKm(dayKm) + ' بین مکان‌ها' : '') + '</small>';
+                    (day.length > 1 && dayKm ? ' · ≈ ' + TC.fmtKm(dayKm) + ' بین مکان‌ها' : '') + '</small>';
                 var pts = day.map(TC.find), route = document.createElement('a');
                 route.className = 'btn day-route'; route.target = '_blank'; route.rel = 'noopener'; route.textContent = '🧭 مسیر این روز';
-                var mid = pts.slice(1, -1).slice(0, 9);
-                route.href = pts.length === 1 ? TC.dirUrl(pts[0]) : TC.dirUrl(pts[pts.length - 1], pts[0], mid);
+                var start = di === 0 && origin ? origin : null;
+                var mid = start ? pts.slice(0, -1).slice(0, 9) : pts.slice(1, -1).slice(0, 9);
+                route.href = start ? TC.dirUrl(pts[pts.length - 1], start, mid)
+                    : pts.length === 1 ? TC.dirUrl(pts[0]) : TC.dirUrl(pts[pts.length - 1], pts[0], mid);
                 if (pts.length - 2 > 9) route.title = 'گوگل‌مپ حداکثر ۹ ایستگاه میانی می‌پذیرد؛ بقیه حذف شده‌اند';
                 head.appendChild(route);
                 box.append(head, ol); plan.appendChild(box);
@@ -257,8 +336,24 @@
                 '<span class="chip"><b>' + TC.faNum(st.n) + '</b> مکان</span>' +
                 '<span class="chip"><b>' + TC.faNum(provCount) + '</b> استان</span>' +
                 '<span class="chip"><b>' + TC.faNum(st.days) + '</b> روز</span>' +
-                '<span class="chip">مجموع ≈ <b>' + TC.fmtKm(total) + '</b></span>';
+                (allRoad && total ? '<span class="chip">مجموع مسیر ≈ <b>' + TC.fmtKm(total) + '</b></span>' : '') +
+                (allRoad && totalMin ? '<span class="chip">زمان رانندگی ≈ <b>' + fmtDur(totalMin) + '</b></span>' : '');
+            var hint = $('hint');
+            hint.textContent = !origin ? 'مبدا انتخاب نشده؛ فقط فاصله‌ی بین مقصدها (روی مسیر جاده‌ای) نشان داده می‌شود.' :
+                TC.Road.pending ? 'در حال گرفتن فاصله‌ی جاده‌ای از نقشه…' :
+                allRoad ? 'فاصله‌ها و زمان‌ها از مسیر جاده‌ای روی نقشه‌ی OpenStreetMap (سرویس OSRM) هستند؛ ترافیک و وضعیت لحظه‌ای جاده در آن‌ها نیست.' :
+                'فاصله‌ی جاده‌ای از نقشه گرفته نشد (اتصال به سرویس مسیریابی برقرار نشد یا مسیری پیدا نشد). عددی از روی فرمول نشان نمی‌دهیم.';
+            if (origin && !allRoad && !TC.Road.pending) {
+                var rb = document.createElement('button'); rb.type = 'button'; rb.textContent = 'تلاش دوباره';
+                rb.addEventListener('click', function () { TC.Road.retry(); failShown = false; render(); });
+                hint.appendChild(document.createTextNode(' ')); hint.appendChild(rb);
+            }
             $('print-link').textContent = 'لینک این برنامه: ' + shareUrl(st);
+
+            if (pf) pf.then(function (changed) {
+                if (changed) { failShown = false; render(); }
+                else if (TC.Road.failed && !failShown) { failShown = true; render(); }
+            });
         }
 
         /* ── رویدادها ── */
@@ -278,7 +373,32 @@
             var v = parseInt(this.value, 10);
             S.setDays(isNaN(v) ? 0 : Math.min(Math.max(v, 1), 30));
         });
-        $('smart').addEventListener('click', function () { S.set(TC.smartOrder(S.ids())); toast('جاذبه‌ها از نزدیک به نزدیک چیده شدند'); });
+        $('smart').addEventListener('click', function () {
+            if (!origin) { toast('ابتدا مبدا را انتخاب کنید'); $('origin-city').focus(); return; }
+            var btn = this; btn.disabled = true; toast('در حال محاسبه‌ی مسیرها…');
+            TC.Road.smartOrder(origin, S.ids()).then(function (r) {
+                if (r.road) { S.set(r.ids); toast('از مبدا و روی مسیر جاده‌ای چیده شد'); }
+                else toast('فاصله‌ی جاده‌ای از نقشه گرفته نشد؛ چیدمان انجام نشد. دوباره تلاش کنید.');
+            }).then(function () { btn.disabled = false; render(); });
+        });
+        $('origin-city').addEventListener('change', function () {
+            var v = this.value;
+            if (v === '__gps') return;
+            origin = TC.ORIGINS.filter(function (c) { return c.name === v; })[0] || null;
+            if (origin) saveOrigin(origin); else { try { localStorage.removeItem(ORG_KEY); } catch (e) {} }
+            renderOrigin(); render();
+        });
+        $('origin-gps').addEventListener('click', function () {
+            if (!navigator.geolocation) { toast('مرورگر شما موقعیت‌یابی را پشتیبانی نمی‌کند'); return; }
+            toast('در حال گرفتن موقعیت…');
+            navigator.geolocation.getCurrentPosition(function (pos) {
+                origin = { name: 'موقعیت فعلی من', lat: pos.coords.latitude, lng: pos.coords.longitude, gps: true };
+                saveOrigin(origin); renderOrigin(); render();
+            }, function () { toast('دسترسی به موقعیت داده نشد؛ مبدا را از فهرست انتخاب کنید'); }, { timeout: 10000, maximumAge: 600000 });
+        });
+        $('origin-skip').addEventListener('click', function () { skipOrigin = true; markAsked(); renderOrigin(); render(); });
+        $('origin-ok').addEventListener('click', function () { markAsked(); renderOrigin(); render(); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && asking) { markAsked(); renderOrigin(); render(); } });
         $('clear').addEventListener('click', function () { if (confirm('کل برنامه‌ی سفر پاک شود؟')) S.clear(); });
         $('print').addEventListener('click', function () { window.print(); });
 
@@ -310,6 +430,7 @@
         });
 
         window.addEventListener('tripchange', render);
+        renderOrigin();
         window.addEventListener('hashchange', function () { shared = TC.decodeShare(location.hash); render(); });
         render();
 
