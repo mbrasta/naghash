@@ -129,6 +129,7 @@
     <header class="top">
         <a class="back" href="index.html">← نقشه</a>
         <h1>🧳 برنامه‌ی سفر من</h1>
+        <span data-nh-mount style="margin-inline-start:auto"></span>
     </header>
 
     <main>
@@ -175,6 +176,7 @@
     </main>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+    <script src="auth.js" defer></script>
     <script src="provinces/province-meta.js"></script>
     <script src="provinces/trip-core.js"></script>
     <script>
@@ -197,6 +199,7 @@
         }
         function saveOrigin(o) {
             try { localStorage.setItem(ORG_KEY, JSON.stringify(o)); if (!o.gps) localStorage.setItem('iranOrigin.v1', o.name); } catch (e) {}
+            if (window.NaghashAuth) window.NaghashAuth.touch();
         }
         function fmtDur(m) {
             if (m == null) return '';

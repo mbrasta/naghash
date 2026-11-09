@@ -66,6 +66,8 @@
             font-family: inherit;
         }
         #search-input:focus { border-color: var(--province-hover); }
+        .nh-slot { margin-top: 10px; }
+        .nh-slot .nh-btn { width: 100%; }
         .province-list {
             flex-grow: 1;
             overflow-y: auto;
@@ -290,7 +292,9 @@
             .sidebar-header { flex: none; padding: 10px 12px; display: flex; flex-wrap: wrap; gap: 8px; max-height: 50%; overflow-y: auto; }
             .province-list { flex: 1 1 0; min-height: 0; -webkit-overflow-scrolling: touch; }
             .sidebar-header h2 { display: none; }
-            #search-input { flex: 1 1 100%; padding: 12px 14px; font-size: 16px; }
+            #search-input { flex: 1 1 55%; padding: 12px 14px; font-size: 16px; min-width: 0; }
+            .nh-slot { margin-top: 0; flex: 0 0 auto; }
+            .nh-slot .nh-btn { width: auto; padding: 12px 14px; font-size: .95rem; }
             .trip-link { flex: 1 1 40%; margin-top: 0; padding: 11px 8px; font-size: 1rem; }
             .filters { flex: 1 1 52%; margin-top: 0; padding: 10px 12px; }
             .filters[open] { flex-basis: 100%; }
@@ -315,6 +319,7 @@
             <div class="sidebar-header">
                 <h2>نقشه هوشمند ایران</h2>
                 <input type="text" id="search-input" placeholder="جستجوی استان یا جاذبه..." autocomplete="off">
+                <div class="nh-slot" data-nh-mount></div>
                 <a class="trip-link" id="trip-link" href="trip.html">🧳 برنامه‌ی سفر من <b id="trip-count">۰</b></a>
                 <details class="filters" id="filters" open>
                     <summary>🔎 چه سفری می‌خواهی؟</summary>
@@ -344,6 +349,7 @@
     </div>
     <div id="tooltip"></div>
 
+    <script src="auth.js" defer></script>
     <script src="provinces-data.js"></script>
     <script src="provinces/province-meta.js"></script>
     <script src="provinces/trip-core.js"></script>
