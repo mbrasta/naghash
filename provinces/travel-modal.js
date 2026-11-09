@@ -14,13 +14,13 @@
         catch (e) { return d; }
     }
     function loadCart() { try { cart = JSON.parse(localStorage.getItem(CART_KEY)) || []; } catch (e) { cart = []; } }
-    function saveCart() { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) {} }
+    function saveCart() { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) {} if (g.NaghashAuth) g.NaghashAuth.touch(); }
     function loadOrigin() {
         var o = ''; try { o = localStorage.getItem(ORIGIN_KEY) || ''; } catch (e) {}
         if (TD.CITIES.indexOf(o) < 0) o = '';
         return o && o !== destCity ? o : (destCity === 'تهران' ? 'مشهد' : 'تهران');
     }
-    function saveOrigin(o) { try { localStorage.setItem(ORIGIN_KEY, o); } catch (e) {} }
+    function saveOrigin(o) { try { localStorage.setItem(ORIGIN_KEY, o); } catch (e) {} if (g.NaghashAuth) g.NaghashAuth.touch(); }
     function inCart(id) { return cart.some(function (o) { return o.id === id; }); }
 
     function build(stem) {

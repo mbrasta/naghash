@@ -264,6 +264,7 @@
         api = setupTrip();
         var made = insertSections();
         if (made) { lazyMap(made.mapSec, api); loadWeather(); }
+        loadScript('../auth.js').catch(function () {});   // ورود و همگام‌سازی حساب (اگر روی سرور فعال باشد)
     }
 
     var sections = Array.prototype.slice.call(document.querySelectorAll('section'));
