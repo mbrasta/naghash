@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>برنامه‌ی سفر من | نقشه هوشمند ایران</title>
+    <title>برنامه‌ی سفر من</title>
     <meta name="theme-color" content="#0f172a">
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icons/icon-192.png">
@@ -128,7 +128,7 @@
 <body>
     <header class="top">
         <a class="back" href="index.html">← نقشه</a>
-        <h1>🧳 برنامه‌ی سفر من</h1>
+        <h1>برنامه‌ی سفر من</h1>
         <span data-nh-mount style="margin-inline-start:auto"></span>
     </header>
 
@@ -341,7 +341,7 @@
             var hint = $('hint');
             hint.textContent = !origin ? 'مبدا انتخاب نشده؛ فقط فاصله‌ی بین مقصدها (روی مسیر جاده‌ای) نشان داده می‌شود.' :
                 TC.Road.pending ? 'در حال گرفتن فاصله‌ی جاده‌ای از نقشه…' :
-                allRoad ? 'فاصله‌ها و زمان‌ها از مسیر جاده‌ای روی نقشه‌ی OpenStreetMap (سرویس OSRM) هستند؛ ترافیک و وضعیت لحظه‌ای جاده در آن‌ها نیست.' :
+                allRoad ? '' :
                 'فاصله‌ی جاده‌ای از نقشه گرفته نشد (اتصال به سرویس مسیریابی برقرار نشد یا مسیری پیدا نشد). عددی از روی فرمول نشان نمی‌دهیم.';
             if (origin && !allRoad && !TC.Road.pending) {
                 var rb = document.createElement('button'); rb.type = 'button'; rb.textContent = 'تلاش دوباره';
