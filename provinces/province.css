@@ -306,15 +306,6 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outlin
     background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.35);
     backdrop-filter: blur(6px); color: #fff;
 }
-.scroll-hint {
-    position: absolute !important; bottom: 105px; left: 50%; width: 26px; height: 42px;
-    margin-left: -13px; border: 2px solid rgba(255,255,255,.7); border-radius: 20px;
-}
-.scroll-hint::before {
-    content: ""; position: absolute; top: 8px; left: 50%; width: 4px; height: 8px; margin-left: -2px;
-    background: #fff; border-radius: 4px; animation: wheel 1.6s infinite;
-}
-@keyframes wheel { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(14px); } }
 @keyframes heroIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 
 /* ناوبری شناور بین بخش‌ها */
@@ -402,13 +393,12 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outlin
 footer small { display: block; margin-top: 8px; opacity: .8; }
 
 @media (max-width: 600px) {
-    .scroll-hint { display: none; }
     .quick-nav { padding-right: 60px; }
     .card-grid, .season-grid { grid-template-columns: 1fr; }
 }
 
 @media print {
-    .back-button, .quick-nav, .to-top, .scroll-hint, .lightbox, .cta-button { display: none !important; }
+    .back-button, .quick-nav, .to-top, .lightbox, .cta-button { display: none !important; }
     .hero { height: auto; min-height: 0; padding: 30px; background: none; color: #000; }
     .hero h1, .hero p { color: #000; text-shadow: none; background: none; border: 0; }
     .container { margin-top: 0; }
